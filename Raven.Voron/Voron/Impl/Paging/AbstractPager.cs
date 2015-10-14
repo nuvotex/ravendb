@@ -199,13 +199,13 @@ namespace Voron.Impl.Paging
 	    public static int GetMaxKeySize()
 	    {
 			// NodeMaxSize - RequiredSpaceForNewNode for 4Kb page is 2038, so we drop this by a bit
-		    return 2000;
+		    return 2038;
 	    }
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	    public static bool IsKeySizeValid(int keySize)
 	    {
-            if (keySize + RequiredSpaceForNewNode > 2000)
+            if (keySize + RequiredSpaceForNewNode > GetMaxKeySize())
                 return false;
 
             return true;
