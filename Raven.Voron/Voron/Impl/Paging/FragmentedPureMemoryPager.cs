@@ -37,7 +37,7 @@ namespace Voron.Impl.Paging
 			throw new InvalidOperationException("Could not find a matching page number: " + pageNumber);
 		}
 
-		public override void AllocateMorePages(Transaction tx, long newLength)
+		protected override void AllocateMorePages(Transaction tx, long newLength)
 		{
 			throw new NotSupportedException();
 		}
@@ -47,11 +47,7 @@ namespace Voron.Impl.Paging
 			throw new NotSupportedException();
 		}
 
-		public override int Write(TreePage page, long? pageNumber)
-		{
-			throw new NotSupportedException();
-		}
-
+	
 		public override int WriteDirect(TreePage start, long pagePosition, int pagesToWrite)
 		{
 			throw new NotSupportedException();

@@ -70,7 +70,7 @@ namespace Voron.Platform.Posix
 			return "shm_open mmap: " + _fd + " " + _file;
 		}
 
-		public override void AllocateMorePages(Transaction tx, long newLength)
+	    protected override void AllocateMorePages(Transaction tx, long newLength)
 		{
 			ThrowObjectDisposedIfNeeded();
 
@@ -98,7 +98,6 @@ namespace Voron.Platform.Posix
 
 			if (tx != null)
 			{
-				newPagerState.AddRef();
 				tx.AddPagerState(newPagerState);
 			}
 

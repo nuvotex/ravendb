@@ -85,48 +85,10 @@ namespace Voron.Impl.Paging
 
         protected abstract string GetSourceName();
 
-        public virtual TreePage GetWritable(long pageNumber)
-        {
-			ThrowObjectDisposedIfNeeded();
-			
-            if (pageNumber + 1 > NumberOfAllocatedPages)
-            {
-                throw new InvalidOperationException("Cannot get page number " + pageNumber +
-                                                    " because number of allocated pages is " + NumberOfAllocatedPages);
-            }
-
-            return new TreePage(AcquirePagePointer(pageNumber), _source, PageSize);
-        }
-
-        public virtual void TryPrefetchingWholeFile()
-        {
-            // do nothing
-        }
-
-        public virtual void MaybePrefetchMemory(List<TreePage> sortedPages)
-        {
-            // do nothing
-        }
-
         public abstract byte* AcquirePagePointer(long pageNumber, PagerState pagerState = null);
 
         public abstract void Sync();
 
-        public virtual PagerState TransactionBegan()
-        {
-			ThrowObjectDisposedIfNeeded();
-
-            var state = PagerState;
-            state.AddRef();
-            return state;
-        }
-
-        public bool WillRequireExtension(long requestedPageNumber, int numberOfPages)
-        {
-			ThrowObjectDisposedIfNeeded();
-			
-            return requestedPageNumber + numberOfPages > NumberOfAllocatedPages;
-        }
 
         public void EnsureContinuous(Transaction tx, long requestedPageNumber, int numberOfPages)
         {
@@ -148,30 +110,6 @@ namespace Voron.Impl.Paging
 
         }
 
-        public bool ShouldGoToOverflowPage(int len)
-        {
-			ThrowObjectDisposedIfNeeded();
-
-			return len + Constants.PageHeaderSize > NodeMaxSize;
-        }
-
-        public int GetNumberOfOverflowPages(int overflowSize)
-        {
-			ThrowObjectDisposedIfNeeded();
-
-            overflowSize += Constants.PageHeaderSize;
-            return (overflowSize / PageSize) + (overflowSize % PageSize == 0 ? 0 : 1);
-        }
-
-
-        public virtual int Write(TreePage page, long? pageNumber)
-        {
-            long startPage = pageNumber ?? page.PageNumber;
-
-            int toWrite = page.IsOverflow ? GetNumberOfOverflowPages(page.OverflowSize) : 1;
-
-            return WriteDirect(page, startPage, toWrite);
-        }
 
         public bool Disposed { get; private set; }
 
@@ -197,7 +135,7 @@ namespace Voron.Impl.Paging
 			Dispose();
 		}
 
-        public abstract void AllocateMorePages(Transaction tx, long newLength);
+        protected abstract void AllocateMorePages(Transaction tx, long newLength);
 
         private long GetNewLength(long current)
         {

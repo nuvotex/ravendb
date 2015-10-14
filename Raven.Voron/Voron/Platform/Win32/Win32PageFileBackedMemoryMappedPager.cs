@@ -58,7 +58,7 @@ namespace Voron.Platform.Win32
             // don't go anywhere
 		}
 
-		public override void AllocateMorePages(Transaction tx, long newLength)
+		protected override void AllocateMorePages(Transaction tx, long newLength)
 		{
 			ThrowObjectDisposedIfNeeded();
 			var newLengthAfterAdjustment = NearestSizeToAllocationGranularity(newLength);
@@ -84,7 +84,6 @@ namespace Voron.Platform.Win32
 		        newPagerState.AddRef();
 		        if (tx != null)
 		        {
-		            newPagerState.AddRef();
 		            tx.AddPagerState(newPagerState);
 		        }
                 // we always share the same memory mapped files references between all pages, since to close them 

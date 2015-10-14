@@ -210,7 +210,7 @@ namespace Voron.Trees
 
                 Debug.Assert(page.GetNodeKey(node).Equals(key));
 
-                shouldGoToOverflowPage = _tx.DataPager.ShouldGoToOverflowPage(len);
+                shouldGoToOverflowPage = ShouldGoToOverflowPage(len);
 
                 byte* pos;
                 if (shouldGoToOverflowPage == false)
@@ -238,7 +238,7 @@ namespace Voron.Trees
             var lastSearchPosition = page.LastSearchPosition; // searching for overflow pages might change this
             byte* overFlowPos = null;
             var pageNumber = -1L;
-            if (shouldGoToOverflowPage ?? _tx.DataPager.ShouldGoToOverflowPage(len))
+            if (shouldGoToOverflowPage ?? ShouldGoToOverflowPage(len))
             {
                 pageNumber = WriteToOverflowPages(len, out overFlowPos);
                 len = -1;
@@ -281,7 +281,12 @@ namespace Voron.Trees
             return dataPos;
         }
 
-		private long WriteToOverflowPages(int overflowSize, out byte* dataPos)
+        public bool ShouldGoToOverflowPage(int len)
+        {
+            return len + Constants.PageHeaderSize > _tx.DataPager.NodeMaxSize;
+        }
+
+        private long WriteToOverflowPages(int overflowSize, out byte* dataPos)
         {
             var numberOfPages = _tx.DataPager.GetNumberOfOverflowPages(overflowSize);
             var overflowPageStart = _tx.AllocatePage(numberOfPages, TreePageFlags.Overflow);
