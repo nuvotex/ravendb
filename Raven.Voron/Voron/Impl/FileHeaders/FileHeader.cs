@@ -61,16 +61,10 @@ namespace Voron.Impl.FileHeaders
 	    [FieldOffset(188)] 
 		public IncrementalBackupInfo IncrementalBackup;
 
-		/// <summary>
-		/// Crc of last shipped transaction
-		/// </summary>
-		[FieldOffset(212)]
-		public uint PreviousTransactionCrc;
-
         /// <summary>
         /// The page size for the data file
         /// </summary>
-        [FieldOffset(216)]
+        [FieldOffset(212)]
         public int PageSize;
     }
 }
