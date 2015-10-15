@@ -58,19 +58,20 @@ namespace Voron.Platform.Win32
             // don't go anywhere
 		}
 
-		protected override void AllocateMorePages(Transaction tx, long newLength)
+		protected override PagerState AllocateMorePages(long newLength)
 		{
 			ThrowObjectDisposedIfNeeded();
 			var newLengthAfterAdjustment = NearestSizeToAllocationGranularity(newLength);
 
-			if (newLengthAfterAdjustment <= _totalAllocationSize)
-				return;
+		    if (newLengthAfterAdjustment <= _totalAllocationSize)
+		        return null;
 
 			var allocationSize = newLengthAfterAdjustment - _totalAllocationSize;
 
-		    if (TryAllocateMoreContinuousPages(allocationSize) == false)
+		    PagerState newPagerState = null;
+            if (TryAllocateMoreContinuousPages(allocationSize) == false)
 		    {
-		        var newPagerState = AllocateMorePagesAndRemapContinuously(allocationSize);
+		        newPagerState = AllocateMorePagesAndRemapContinuously(allocationSize);
 		        if (newPagerState == null)
 		        {
 		            var errorMessage = string.Format(
@@ -82,10 +83,7 @@ namespace Voron.Platform.Win32
                 newPagerState.DebugVerify(newLengthAfterAdjustment);
 
 		        newPagerState.AddRef();
-		        if (tx != null)
-		        {
-		            tx.AddPagerState(newPagerState);
-		        }
+		       
                 // we always share the same memory mapped files references between all pages, since to close them 
                 // would be to lose all the memory associated with them
 		        PagerState.DisposeFilesOnDispose = false;
@@ -96,6 +94,7 @@ namespace Voron.Platform.Win32
 
 		    _totalAllocationSize += allocationSize;
             NumberOfAllocatedPages = _totalAllocationSize / PageSize;
+		    return newPagerState;
 		}
 
 	
