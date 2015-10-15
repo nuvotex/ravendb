@@ -60,7 +60,7 @@ namespace Voron.Trees
 				return;
 			}
 
-			page = _tx.ModifyPage(page.PageNumber, this, page);
+			page = ModifyPage(page);
 			var item = page.GetNode(page.LastSearchPosition);
 
 			// already was turned into a multi tree, not much to do here
@@ -74,7 +74,7 @@ namespace Voron.Trees
 			byte* nestedPagePtr;
 			if (item->Flags == TreeNodeFlags.PageRef)
 			{
-				var overFlowPage = _tx.ModifyPage(item->PageNumber, this ,null);
+				var overFlowPage = ModifyPage(item->PageNumber);
 				nestedPagePtr = overFlowPage.Base + Constants.PageHeaderSize;
 			}
 			else
@@ -151,7 +151,7 @@ namespace Voron.Trees
 				{
 					Lower = (ushort)Constants.PageHeaderSize,
 					Upper = newSize,
-					Flags = TreePageFlags.Leaf,
+					TreeFlags = TreePageFlags.Leaf,
 					PageNumber = -1L // mark as invalid page number
 				};
 			
@@ -195,7 +195,7 @@ namespace Voron.Trees
 				PageNumber = -1L,// hint that this is an inner page
 				Lower = (ushort) Constants.PageHeaderSize,
 				Upper = actualPageSize,
-				Flags = TreePageFlags.Leaf,
+				TreeFlags = TreePageFlags.Leaf,
 			};
 
 			CheckConcurrency(key, value, version, 0, TreeActionType.Add);
@@ -214,7 +214,7 @@ namespace Voron.Trees
 				return; //nothing to delete - key not found
 			}
 
-			page = _tx.ModifyPage(page.PageNumber, this, page);
+			page = ModifyPage(page);
 
 			var item = page.GetNode(page.LastSearchPosition);
 
@@ -244,7 +244,7 @@ namespace Voron.Trees
 				byte* nestedPagePtr;
 				if (item->Flags == TreeNodeFlags.PageRef)
 				{
-					var overFlowPage = _tx.ModifyPage(item->PageNumber, this, null);
+					var overFlowPage = ModifyPage(item->PageNumber);
 					nestedPagePtr = overFlowPage.Base + Constants.PageHeaderSize;
 				}
 				else

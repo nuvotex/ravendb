@@ -28,7 +28,7 @@ namespace Voron.Tests.Journal
 			long pageAllocatedInUncommittedTransaction;
 			using (var tx1 = Env.NewTransaction(TransactionFlags.ReadWrite))
 			{
-				var page = tx1.AllocatePage(1, TreePageFlags.Leaf);
+			    var page = tx1.AllocatePage(1);
 
 				pageAllocatedInUncommittedTransaction = page.PageNumber;
 

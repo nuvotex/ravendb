@@ -17,10 +17,15 @@ namespace Voron.Trees
 	public unsafe class TreePage
     {
         private readonly byte* _base;
-        private readonly TreePageHeader* _header;
-
-	    public readonly string Source;
 	    private readonly int _pageSize;
+	    private readonly string _source;
+	    private readonly TreePageHeader* _header;
+
+	    public string Source
+	    {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get { return _source; }
+	    }
 
 	    public int LastMatch;
 	    public int LastSearchPosition;
@@ -29,9 +34,9 @@ namespace Voron.Trees
 	    public TreePage(byte* b, string source, int pageSize)
         {
             _base = b;
-            _header = (TreePageHeader*)b;
-	        Source = source;
-	        _pageSize = pageSize;            
+	        _source = source;
+	        _pageSize = pageSize;
+	        _header = (TreePageHeader*)b;
         }
 
         
@@ -43,12 +48,12 @@ namespace Voron.Trees
             set { _header->PageNumber = value; } 
         }
 
-	    public TreePageFlags Flags 
+	    public TreePageFlags TreeFlags 
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get { return _header->Flags; }
+            get { return _header->TreeFlags; }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set { _header->Flags = value; }
+            set { _header->TreeFlags = value; }
         }
 
         public ushort Lower 
@@ -181,25 +186,25 @@ namespace Voron.Trees
 	    public bool IsLeaf
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-			get { return (_header->Flags & TreePageFlags.Leaf) == TreePageFlags.Leaf; }
+			get { return (_header->TreeFlags & TreePageFlags.Leaf) == TreePageFlags.Leaf; }
         }
 
         public bool IsBranch
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get { return (_header->Flags & TreePageFlags.Branch) == TreePageFlags.Branch; }
+            get { return (_header->TreeFlags & TreePageFlags.Branch) == TreePageFlags.Branch; }
         }
 
 		public bool IsOverflow
 		{
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-			get { return (_header->Flags & TreePageFlags.Overflow) == TreePageFlags.Overflow; }
+            get { return (_header->Flags & PageFlags.Overflow) == PageFlags.Overflow; }
 		}
 
 		public bool IsFixedSize
 		{
 			[MethodImpl(MethodImplOptions.AggressiveInlining)]
-			get { return (_header->Flags & TreePageFlags.FixedSize) == TreePageFlags.FixedSize; }
+            get { return (_header->TreeFlags & TreePageFlags.FixedSize) == TreePageFlags.FixedSize; }
 		}
 
         public ushort FixedSize_NumberOfEntries
@@ -416,7 +421,7 @@ namespace Voron.Trees
 	        using (tx.Environment.GetTemporaryPage(tx, out tmp))
 	        {
 		        var copy = tmp.GetTempPage();
-				copy.Flags = Flags;
+				copy.TreeFlags = TreeFlags;
 
 		        var slice = CreateNewEmptyKey();
 
@@ -429,7 +434,7 @@ namespace Voron.Trees
 
                 Memory.Copy(_base + Constants.PageHeaderSize,
 									 copy._base + Constants.PageHeaderSize,
-									 _pageSize - Constants.PageHeaderSize);
+                                     _pageSize - Constants.PageHeaderSize);
 
 		        Upper = copy.Upper;
 				Lower = copy.Lower;
@@ -447,9 +452,9 @@ namespace Voron.Trees
 
         public override string ToString()
         {
-            if ((Flags & TreePageFlags.FixedSize)==TreePageFlags.FixedSize)
-                return "#" + PageNumber + " (count: " + FixedSize_NumberOfEntries + ") " + Flags;
-            return "#" + PageNumber + " (count: " + NumberOfEntries + ") " + Flags;
+            if ((TreeFlags & TreePageFlags.FixedSize)==TreePageFlags.FixedSize)
+                return "#" + PageNumber + " (count: " + FixedSize_NumberOfEntries + ") " + TreeFlags;
+            return "#" + PageNumber + " (count: " + NumberOfEntries + ") " + TreeFlags;
         }
 
         public string Dump()
@@ -528,7 +533,16 @@ namespace Voron.Trees
 	    public int PageMaxSpace
 	    {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-		    get { return _pageSize - Constants.PageHeaderSize; }
+            get { return _pageSize - Constants.PageHeaderSize; }
+	    }
+
+	    public PageFlags Flags
+	    {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get { return _header->Flags; }
+	    
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            set { _header->Flags = value; }
 	    }
 
 	    public string this[int i]
@@ -631,7 +645,7 @@ namespace Voron.Trees
                 size += nodeSize + (nodeSize & 1);
             }
 
-	        Debug.Assert(size <= _pageSize);
+            Debug.Assert(size <= _pageSize);
             Debug.Assert(SizeUsed >= size);
 
             return size;

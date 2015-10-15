@@ -31,7 +31,7 @@ namespace Voron.Trees
                 return null;
             }
 
-			var parentPage = _tx.ModifyPage(_cursor.ParentPage.PageNumber, _tree, _cursor.ParentPage);
+			var parentPage = _tree.ModifyPage(_cursor.ParentPage);
 			_cursor.Update(_cursor.Pages.First.Next, parentPage);
 
             if (page.NumberOfEntries == 0) // empty page, just delete it and fixup parent
@@ -72,7 +72,7 @@ namespace Voron.Trees
             var sibling = SetupMoveOrMerge(page, parentPage);
             Debug.Assert(sibling.PageNumber != page.PageNumber);
 
-	        if (page.Flags != sibling.Flags)
+	        if (page.TreeFlags != sibling.TreeFlags)
 		        return null;
 
             minKeys = sibling.IsBranch ? 2 : 1; // branch must have at least 2 keys
@@ -167,7 +167,7 @@ namespace Voron.Trees
             TreePage sibling;
             if (parentPage.LastSearchPosition == 0) // we are the left most item
             {
-                sibling = _tx.ModifyPage(parentPage.GetNode(1)->PageNumber,_tree, null);
+                sibling = _tree.ModifyPage(parentPage.GetNode(1)->PageNumber);
 
                 sibling.LastSearchPosition = 0;
                 page.LastSearchPosition = page.NumberOfEntries;
@@ -179,7 +179,7 @@ namespace Voron.Trees
                 if (beyondLast)
                     parentPage.LastSearchPosition--;
                 parentPage.LastSearchPosition--;
-                sibling = _tx.ModifyPage(parentPage.GetNode(parentPage.LastSearchPosition)->PageNumber,_tree, null);
+                sibling = _tree.ModifyPage(parentPage.GetNode(parentPage.LastSearchPosition)->PageNumber);
                 parentPage.LastSearchPosition++;
                 if (beyondLast)
                     parentPage.LastSearchPosition++;
@@ -356,7 +356,7 @@ namespace Voron.Trees
             var node = page.GetNode(0);
             Debug.Assert(node->Flags == (TreeNodeFlags.PageRef));
 
-			var rootPage = _tx.ModifyPage(node->PageNumber, _tree, null);
+			var rootPage = _tree.ModifyPage(node->PageNumber);
 			_tree.State.RootPageNumber = rootPage.PageNumber;
 	        _tree.State.Depth--;
 

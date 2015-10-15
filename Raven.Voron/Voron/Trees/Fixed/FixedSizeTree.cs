@@ -119,7 +119,7 @@ namespace Voron.Trees.Fixed
         {
             var page = FindPageFor(key);
 
-            page = _tx.ModifyPage(page.PageNumber, _parent, page);
+            page = _parent.ModifyPage(page);
 
             if (_lastMatch == 0) // update
             {
@@ -211,7 +211,7 @@ namespace Voron.Trees.Fixed
                 dataStart[1] = page.PageNumber;
             }
 
-            parentPage = _tx.ModifyPage(parentPage.PageNumber, _parent, parentPage);
+            parentPage = _parent.ModifyPage(parentPage);
 
             if (page.IsLeaf) // simple case of splitting a leaf pageNum
             {
@@ -355,7 +355,7 @@ namespace Voron.Trees.Fixed
                     largeHeader->Flags = FixedSizeTreeHeader.OptionFlags.Large;
                     largeHeader->RootPageNumber = allocatePage.PageNumber;
 
-                    allocatePage.Flags = TreePageFlags.FixedSize | TreePageFlags.Leaf;
+                    allocatePage.TreeFlags = TreePageFlags.FixedSize | TreePageFlags.Leaf;
                     allocatePage.PageNumber = allocatePage.PageNumber;
                     allocatePage.FixedSize_NumberOfEntries = newEntriesCount;
                     allocatePage.FixedSize_ValueSize = _valSize;
@@ -533,7 +533,7 @@ namespace Voron.Trees.Fixed
                     return RemoveLargeEntry(key);
             }
 
-	        throw new InvalidOperationException("Flags has invalid value: " + _flags);
+	        throw new InvalidOperationException("TreeFlags has invalid value: " + _flags);
         }
 
         public struct DeletionResult
@@ -560,7 +560,7 @@ namespace Voron.Trees.Fixed
                     entriedDeleted = DeleteRangeLarge(start, end);
                     break;
                 default:
-                    throw new InvalidOperationException("Flags value is not valid: " + _flags);
+                    throw new InvalidOperationException("TreeFlags value is not valid: " + _flags);
             }
             return new DeletionResult
             {
@@ -756,7 +756,7 @@ namespace Voron.Trees.Fixed
                 return true;
             }
             var parentPage = _cursor.Pop();
-            parentPage = _tx.ModifyPage(parentPage.PageNumber, _parent, parentPage);
+            parentPage = _parent.ModifyPage(parentPage);
             RemoveEntryFromPage(parentPage, parentPage.LastSearchPosition);
             while (parentPage != null)
             {
@@ -771,7 +771,7 @@ namespace Voron.Trees.Fixed
             var page = FindPageFor(key);
             if (page.LastMatch != 0)
                 return new DeletionResult();
-            page = _tx.ModifyPage(page.PageNumber, _parent, page);
+            page = _parent.ModifyPage(page);
 
             var largeHeader = (FixedSizeTreeHeader.Large*)_parent.DirectAdd(_treeName, sizeof(FixedSizeTreeHeader.Large));
             largeHeader->NumberOfEntries--;
@@ -853,7 +853,7 @@ namespace Voron.Trees.Fixed
             // we determined that we require rebalancing...
 
             var parentPage = _cursor.Pop();
-            parentPage = _tx.ModifyPage(parentPage.PageNumber, _parent, parentPage);
+            parentPage = _parent.ModifyPage(parentPage);
 
             if (page.FixedSize_NumberOfEntries == 0)// empty page, delete it and fixup the parent
             {
@@ -902,7 +902,7 @@ namespace Voron.Trees.Fixed
                 // from the one on the right
                 var siblingNum = PageValueFor(parentPage, 1);
                 var siblingPage = _tx.GetReadOnlyPage(siblingNum);
-                if (siblingPage.Flags != page.Flags)
+                if (siblingPage.TreeFlags != page.TreeFlags)
                     return null; // we cannot steal from a leaf sibling if we are branch, or vice versa
 
                 if (siblingPage.FixedSize_NumberOfEntries <= minNumberOfEntriesBeforeRebalance * 2)
@@ -949,7 +949,7 @@ namespace Voron.Trees.Fixed
             {
                 var siblingNum = PageValueFor(parentPage, parentPage.LastSearchPosition - 1);
                 var siblingPage = _tx.GetReadOnlyPage(siblingNum);
-                if (siblingPage.Flags != page.Flags)
+                if (siblingPage.TreeFlags != page.TreeFlags)
                     return null; // we cannot steal from a leaf sibling if we are branch, or vice versa
 
                 if (siblingPage.FixedSize_NumberOfEntries <= minNumberOfEntriesBeforeRebalance * 2)

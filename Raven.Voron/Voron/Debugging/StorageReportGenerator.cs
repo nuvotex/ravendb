@@ -142,7 +142,7 @@ namespace Voron.Debugging
 								break;
 							}
 							default:
-								throw new InvalidEnumArgumentException("currentNode->Flags", (int) currentNode->Flags, typeof (TreeNodeFlags));
+								throw new InvalidEnumArgumentException("currentNode->TreeFlags", (int) currentNode->Flags, typeof (TreeNodeFlags));
 						}
 					} while (multiTreeIterator.MoveNext());
 				}

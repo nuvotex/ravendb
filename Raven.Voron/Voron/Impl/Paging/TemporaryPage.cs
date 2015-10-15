@@ -43,7 +43,7 @@ namespace Voron.Impl.Paging
 	        {
 				Upper = (ushort)_options.PageSize,
 		        Lower = (ushort) Constants.PageHeaderSize,
-		        Flags = TreePageFlags.None,
+		        TreeFlags = TreePageFlags.None,
 	        };
         }
 	    public IDisposable ReturnTemporaryPageToPool { get; set; }

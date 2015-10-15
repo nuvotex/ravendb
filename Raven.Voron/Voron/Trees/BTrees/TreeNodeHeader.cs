@@ -48,7 +48,7 @@ namespace Voron.Trees
 			{
 				var overFlowPage = tx.GetReadOnlyPage(node->PageNumber);
 
-				Debug.Assert(overFlowPage.IsOverflow, "Requested oveflow page but got " + overFlowPage.Flags);
+				Debug.Assert(overFlowPage.IsOverflow, "Requested oveflow page but got " + overFlowPage.TreeFlags);
 				Debug.Assert(overFlowPage.OverflowSize > 0, "Overflow page cannot be size equal 0 bytes");
 
                 return new ValueReader(overFlowPage.Base + Constants.PageHeaderSize, overFlowPage.OverflowSize);
