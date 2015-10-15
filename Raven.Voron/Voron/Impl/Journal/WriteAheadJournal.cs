@@ -252,7 +252,7 @@ namespace Voron.Impl.Journal
 			var numberOfPagesInLastPage = last.IsOverflow == false ? 1 :
 				_env.Options.DataPager.GetNumberOfOverflowPages(last.OverflowSize);
 
-			_dataPager.EnsureContinuous(null, last.PageNumber, numberOfPagesInLastPage);
+			_dataPager.EnsureContinuous(last.PageNumber, numberOfPagesInLastPage);
 
 		    _dataPager.MaybePrefetchMemory(sortedPagesToWrite);
 
@@ -669,15 +669,17 @@ namespace Voron.Impl.Journal
 
 				if (alreadyInWriteTx)
 				{
-					_waj._dataPager.EnsureContinuous(transaction, last.PageNumber, numberOfPagesInLastPage);
-				}
+				    var pagerState = _waj._dataPager.EnsureContinuous(last.PageNumber, numberOfPagesInLastPage);
+                    transaction.AddPagerState(pagerState);
+                }
 				else
 				{
 					using (var tx = _waj._env.NewTransaction(TransactionFlags.ReadWrite).JournalApplicatorTransaction())
 					{
-						_waj._dataPager.EnsureContinuous(tx, last.PageNumber, numberOfPagesInLastPage);
+					    var pagerState = _waj._dataPager.EnsureContinuous(last.PageNumber, numberOfPagesInLastPage);
+                        tx.AddPagerState(pagerState);
 
-						tx.Commit();
+                        tx.Commit();
 					}
 				}
 			}
@@ -875,8 +877,9 @@ namespace Voron.Impl.Journal
 									  (outputBuffer % pageSize == 0 ? 0 : 1);
 			var pagesRequired = (dataPagesCount + outputBufferInPages);
 
-			compressionPager.EnsureContinuous(tx, 0, pagesRequired);
-			var tempBuffer = compressionPager.AcquirePagePointer(0);
+		    var pagerState = compressionPager.EnsureContinuous(0, pagesRequired);
+            tx.AddPagerState(pagerState);
+            var tempBuffer = compressionPager.AcquirePagePointer(0);
 			var compressionBuffer = compressionPager.AcquirePagePointer(dataPagesCount);
 
 			var write = tempBuffer;

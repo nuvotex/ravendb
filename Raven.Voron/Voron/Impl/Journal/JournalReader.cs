@@ -74,7 +74,7 @@ namespace Voron.Impl.Journal
 			if (checkCrc && !ValidatePagesCrc(options, transactionSize, current))
 				return false;
 
-			_recoveryPager.EnsureContinuous(null, _recoveryPage, (current->PageCount + current->OverflowPageCount) + 1);
+			_recoveryPager.EnsureContinuous(_recoveryPage, (current->PageCount + current->OverflowPageCount) + 1);
 			var dataPage = _recoveryPager.AcquirePagePointer(_recoveryPage);
 
 			UnmanagedMemory.Set(dataPage, 0, (current->PageCount + current->OverflowPageCount) * options.PageSize);

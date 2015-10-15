@@ -143,7 +143,7 @@ namespace Voron.Impl.Backup
 
 						var finalPager = env.Options.CreateScratchPager("min-inc-backup-final.scratch");
 						toDispose.Add(finalPager);
-						finalPager.EnsureContinuous(null, 0, 1);//txHeader
+						finalPager.EnsureContinuous(0, 1);//txHeader
 
 						foreach (var partition in Partition(pageNumberToPageInScratch.Values, env.Options.MaxNumberOfPagesInMergedTransaction))
 						{
@@ -160,7 +160,7 @@ namespace Voron.Impl.Backup
 									overflowPages += (size - 1);
 								}
 								totalNumberOfPages += size;
-								finalPager.EnsureContinuous(null, start, size); //maybe increase size
+								finalPager.EnsureContinuous(start, size); //maybe increase size
 
 								Memory.Copy(finalPager.AcquirePagePointer(start), p.Base, size * env.Options.PageSize);
 

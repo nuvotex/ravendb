@@ -65,15 +65,16 @@ namespace Voron.Impl.Scratch
 			return (_lastUsedPage + sizeToAllocate) * _scratchPager.PageSize;
 		}
 
-		public PageFromScratchBuffer Allocate(Transaction tx, int numberOfPages, long size)
+		public PageFromScratchBuffer Allocate(Transaction tx, int numberOfPages, int sizeToAllocate)
 		{
-			_scratchPager.EnsureContinuous(tx, _lastUsedPage, (int) size);
+		    var pagerState = _scratchPager.EnsureContinuous(_lastUsedPage, sizeToAllocate);
+            tx.AddPagerState(pagerState);
 
-            var result = new PageFromScratchBuffer(_scratchNumber, _lastUsedPage, size, numberOfPages);
+            var result = new PageFromScratchBuffer(_scratchNumber, _lastUsedPage, sizeToAllocate, numberOfPages);
 
             _allocatedPagesUsedSize += numberOfPages;
 			_allocatedPages.Add(_lastUsedPage, result);
-			_lastUsedPage += size;
+			_lastUsedPage += sizeToAllocate;
 
 			return result;
 		}

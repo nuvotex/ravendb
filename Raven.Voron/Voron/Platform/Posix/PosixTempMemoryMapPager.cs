@@ -70,14 +70,14 @@ namespace Voron.Platform.Posix
 			return "shm_open mmap: " + _fd + " " + _file;
 		}
 
-	    protected override void AllocateMorePages(Transaction tx, long newLength)
+	    protected override PagerState AllocateMorePages(long newLength)
 		{
 			ThrowObjectDisposedIfNeeded();
 
 			var newLengthAfterAdjustment = NearestSizeToPageSize(newLength);
 
-			if (newLengthAfterAdjustment <= _totalAllocationSize) //nothing to do
-				return;
+	        if (newLengthAfterAdjustment <= _totalAllocationSize) //nothing to do
+	            return null;
 
 			var allocationSize = newLengthAfterAdjustment - _totalAllocationSize;
 
@@ -96,16 +96,13 @@ namespace Voron.Platform.Posix
 
 			newPagerState.DebugVerify(newLengthAfterAdjustment);
 
-			if (tx != null)
-			{
-				tx.AddPagerState(newPagerState);
-			}
-
 			var tmp = PagerState;
 			PagerState = newPagerState;
 			tmp.Release(); //replacing the pager state --> so one less reference for it
 
 			NumberOfAllocatedPages = _totalAllocationSize / PageSize;
+
+            return newPagerState;
 		}
 
 		private PagerState CreatePagerState()

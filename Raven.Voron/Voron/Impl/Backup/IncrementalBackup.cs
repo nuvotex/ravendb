@@ -308,13 +308,14 @@ namespace Voron.Impl.Backup
 							}
 							var last = sortedPages.Last();
 
-							env.Options.DataPager.EnsureContinuous(txw, last.PageNumber,
-								last.IsOverflow
-									? env.Options.DataPager.GetNumberOfOverflowPages(
-										last.OverflowSize)
-									: 1);
+						    var numberOfPages = last.IsOverflow
+						        ? env.Options.DataPager.GetNumberOfOverflowPages(
+						            last.OverflowSize)
+						        : 1;
+						    var pagerState = env.Options.DataPager.EnsureContinuous(last.PageNumber, numberOfPages);
+                            txw.AddPagerState(pagerState);
 
-							foreach (var page in sortedPages)
+                            foreach (var page in sortedPages)
 							{
 								env.Options.DataPager.Write(page);
 							}
