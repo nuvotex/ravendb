@@ -8,7 +8,7 @@ namespace Voron.Trees
 {
     public unsafe class TreeMutableState
     {
-	    private readonly Transaction _tx;
+        private readonly LowLevelTransaction _tx;
 	    public long BranchPages;
         public long LeafPages;
         public long OverflowPages;
@@ -22,7 +22,7 @@ namespace Voron.Trees
 
         public bool InWriteTransaction;
 
-	    public TreeMutableState(Transaction tx)
+        public TreeMutableState(LowLevelTransaction tx)
 	    {
 		    _tx = tx;
 	    }

@@ -53,7 +53,7 @@ namespace Voron.Tests.Bugs
 
 					txw.Commit();
 
-                    DebugStuff.RenderAndShow(txw, 1);
+                    DebugStuff.RenderAndShowTree(txw, 1);
 				}
 
 				Env.FlushLogToDataFile();
@@ -117,7 +117,7 @@ namespace Voron.Tests.Bugs
 
 					txw.Commit();
 
-                    DebugStuff.RenderAndShow(txw, 1);
+                    DebugStuff.RenderAndShowTree(txw, 1);
 				}
 
 				Env.FlushLogToDataFile();

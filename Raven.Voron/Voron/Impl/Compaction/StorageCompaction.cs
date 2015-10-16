@@ -56,88 +56,89 @@ namespace Voron.Impl.Compaction
 
 		private static void CopyTrees(StorageEnvironment existingEnv, StorageEnvironment compactedEnv, Action<CompactionProgress> progressReport = null)
 		{
-            using (var txr = existingEnv.NewTransaction(TransactionFlags.Read))
-            using (var rootIterator = txr.Root.Iterate())
-			{
-				if (rootIterator.Seek(Slice.BeforeAllKeys) == false)
-					return;
+            throw new NotImplementedException();
+            //using (var txr = existingEnv.NewTransaction(TransactionFlags.Read))
+            //using (var rootIterator = txr.Root.Iterate())
+            //{
+            //    if (rootIterator.Seek(Slice.BeforeAllKeys) == false)
+            //        return;
 
-				var totalTreesCount = txr.Root.State.EntriesCount;
-				var copiedTrees = 0L;
+            //    var totalTreesCount = txr.Root.State.EntriesCount;
+            //    var copiedTrees = 0L;
 
-				do
-				{
-				    var treeName = rootIterator.CurrentKey.ToString();
-				    var existingTree = txr.ReadTree(treeName);
+            //    do
+            //    {
+            //        var treeName = rootIterator.CurrentKey.ToString();
+            //        var existingTree = txr.ReadTree(treeName);
 
-				    Report(treeName, copiedTrees, totalTreesCount, 0, existingTree.State.EntriesCount, progressReport);
+            //        Report(treeName, copiedTrees, totalTreesCount, 0, existingTree.State.EntriesCount, progressReport);
 
-				    using (var existingTreeIterator = existingTree.Iterate())
-				    {
-				        if (existingTreeIterator.Seek(Slice.BeforeAllKeys) == false)
-				            continue;
+            //        using (var existingTreeIterator = existingTree.Iterate())
+            //        {
+            //            if (existingTreeIterator.Seek(Slice.BeforeAllKeys) == false)
+            //                continue;
 
-				        using (var txw = compactedEnv.NewTransaction(TransactionFlags.ReadWrite))
-				        {
-				            compactedEnv.CreateTree(txw, treeName);
-				            txw.Commit();
-				        }
+            //            using (var txw = compactedEnv.NewTransaction(TransactionFlags.ReadWrite))
+            //            {
+            //                compactedEnv.CreateTree(txw, treeName);
+            //                txw.Commit();
+            //            }
 
-				        var copiedEntries = 0L;
+            //            var copiedEntries = 0L;
 
-				        do
-				        {
-				            var transactionSize = 0L;
+            //            do
+            //            {
+            //                var transactionSize = 0L;
 
-				            using (var txw = compactedEnv.NewTransaction(TransactionFlags.ReadWrite))
-				            {
-				                var newTree = txw.ReadTree(treeName);
+            //                using (var txw = compactedEnv.NewTransaction(TransactionFlags.ReadWrite))
+            //                {
+            //                    var newTree = txw.ReadTree(treeName);
 
-				                do
-				                {
-				                    var key = existingTreeIterator.CurrentKey;
+            //                    do
+            //                    {
+            //                        var key = existingTreeIterator.CurrentKey;
 
-				                    if (existingTreeIterator.Current->Flags == TreeNodeFlags.MultiValuePageRef)
-				                    {
-				                        using (var multiTreeIterator = existingTree.MultiRead(key))
-				                        {
-				                            if (multiTreeIterator.Seek(Slice.BeforeAllKeys) == false)
-				                                continue;
+            //                        if (existingTreeIterator.Current->Flags == TreeNodeFlags.MultiValuePageRef)
+            //                        {
+            //                            using (var multiTreeIterator = existingTree.MultiRead(key))
+            //                            {
+            //                                if (multiTreeIterator.Seek(Slice.BeforeAllKeys) == false)
+            //                                    continue;
 
-				                            do
-				                            {
-				                                var multiValue = multiTreeIterator.CurrentKey;
-				                                newTree.MultiAdd(key, multiValue);
-				                                transactionSize += multiValue.Size;
-				                            } while (multiTreeIterator.MoveNext());
-				                        }
-				                    }
-				                    else
-				                    {
-				                        using (var value = existingTree.Read(key).Reader.AsStream())
-				                        {
-				                            newTree.Add(key, value);
-				                            transactionSize += value.Length;
-				                        }
-				                    }
+            //                                do
+            //                                {
+            //                                    var multiValue = multiTreeIterator.CurrentKey;
+            //                                    newTree.MultiAdd(key, multiValue);
+            //                                    transactionSize += multiValue.Size;
+            //                                } while (multiTreeIterator.MoveNext());
+            //                            }
+            //                        }
+            //                        else
+            //                        {
+            //                            using (var value = existingTree.Read(key).Reader.AsStream())
+            //                            {
+            //                                newTree.Add(key, value);
+            //                                transactionSize += value.Length;
+            //                            }
+            //                        }
 
-				                    copiedEntries++;
-				                } while (transactionSize < compactedEnv.Options.MaxLogFileSize/2 && existingTreeIterator.MoveNext());
+            //                        copiedEntries++;
+            //                    } while (transactionSize < compactedEnv.Options.MaxLogFileSize/2 && existingTreeIterator.MoveNext());
 
-				                txw.Commit();
-				            }
+            //                    txw.Commit();
+            //                }
 
-				            if (copiedEntries == existingTree.State.EntriesCount)
-				                copiedTrees++;
+            //                if (copiedEntries == existingTree.State.EntriesCount)
+            //                    copiedTrees++;
 
-				            Report(treeName, copiedTrees, totalTreesCount, copiedEntries, existingTree.State.EntriesCount,
-				                progressReport);
+            //                Report(treeName, copiedTrees, totalTreesCount, copiedEntries, existingTree.State.EntriesCount,
+            //                    progressReport);
 
-				            compactedEnv.FlushLogToDataFile();
-				        } while (existingTreeIterator.MoveNext());
-				    }
-				} while (rootIterator.MoveNext());
-			}
+            //                compactedEnv.FlushLogToDataFile();
+            //            } while (existingTreeIterator.MoveNext());
+            //        }
+            //    } while (rootIterator.MoveNext());
+            //}
 		}
 
 		private static void Report(string treeName, long copiedTrees, long totalTreeCount, long copiedRecords, long totalTreeRecordsCount, Action<CompactionProgress> progressReport)

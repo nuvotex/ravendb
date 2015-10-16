@@ -29,7 +29,7 @@ namespace Voron.Util
 			}
 		}
 
-		public void SetItems(Transaction tx, Dictionary<long, PagePosition> items)
+        public void SetItems(LowLevelTransaction tx, Dictionary<long, PagePosition> items)
 		{
 			UpdateMaxSeenTxId(tx);
 
@@ -39,9 +39,9 @@ namespace Voron.Util
 				_values.AddOrUpdate(copy.Key, l => ImmutableAppendOnlyList<PagePosition>.Empty.Append(copy.Value),
 				(l, list) => list.Append(copy.Value));
 			}
-		}	
+		}
 
-		private void UpdateMaxSeenTxId(Transaction tx)
+        private void UpdateMaxSeenTxId(LowLevelTransaction tx)
 		{
 			if (_maxSeenTransaction > tx.Id)
 			{
@@ -68,7 +68,7 @@ namespace Voron.Util
 			}
 		}
 
-		public bool TryGetValue(Transaction tx, long page, out PagePosition value)
+        public bool TryGetValue(LowLevelTransaction tx, long page, out PagePosition value)
 		{
 			ImmutableAppendOnlyList<PagePosition> list;
 			if (_values.TryGetValue(page, out list) == false)
