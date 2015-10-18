@@ -178,7 +178,6 @@ namespace Voron.Impl.FileHeaders
 			header->HeaderRevision = -1;
 			header->TransactionId = 0;
 			header->LastPageNumber = 1;
-			header->FreeSpace.RootPageNumber = -1;
 			header->Root.RootPageNumber = -1;
 			header->Journal.CurrentJournal = -1;
 			header->Journal.JournalFilesCount = 0;
