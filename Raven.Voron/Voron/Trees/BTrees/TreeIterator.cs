@@ -9,7 +9,7 @@ namespace Voron.Trees
 	public unsafe class TreeIterator : IIterator
 	{
 		private readonly Tree _tree;
-		private readonly Transaction _tx;
+        private readonly LowLevelTransaction _tx;
 		private TreeCursor _cursor;
 		private TreePage _currentPage;
 		private Slice _currentKey = new Slice(SliceOptions.Key);
@@ -17,8 +17,8 @@ namespace Voron.Trees
 	    private bool _disposed;
 
         public event Action<IIterator> OnDispoal;
- 
-		public TreeIterator(Tree tree, Transaction tx)
+
+        public TreeIterator(Tree tree, LowLevelTransaction tx)
 		{
 			_tree = tree;
 			_tx = tx;
@@ -118,7 +118,7 @@ namespace Voron.Trees
 					{
 						_cursor.Push(_currentPage);
 						var node = _currentPage.GetNode(_currentPage.LastSearchPosition);
-						_currentPage = _tx.GetReadOnlyPage(node->PageNumber);
+						_currentPage = _tx.GetReadOnlyTreePage(node->PageNumber);
 						_currentPage.LastSearchPosition = _currentPage.NumberOfEntries - 1;
 					}
 					var current = _currentPage.GetNode(_currentPage.LastSearchPosition);
@@ -152,7 +152,7 @@ namespace Voron.Trees
 					{
 						_cursor.Push(_currentPage);
 						var node = _currentPage.GetNode(_currentPage.LastSearchPosition);
-						_currentPage = _tx.GetReadOnlyPage(node->PageNumber);
+						_currentPage = _tx.GetReadOnlyTreePage(node->PageNumber);
 
 						_currentPage.LastSearchPosition = 0;
 					}

@@ -108,7 +108,7 @@ namespace Voron.Tests.Trees
 					tree.Add("test" + new string('-', 256) + i, new byte[256]);
 				}
 
-				DebugStuff.RenderAndShow(tx, tree.State.RootPageNumber);
+				DebugStuff.RenderAndShowTree(tx, tree.State.RootPageNumber);
 				
 				Assert.Equal(4, tree.State.Depth);
 
@@ -124,7 +124,7 @@ namespace Voron.Tests.Trees
 					tree.Delete("test" + new string('-', 256) + i);
 				}
 
-				DebugStuff.RenderAndShow(tx, tree.State.RootPageNumber);
+				DebugStuff.RenderAndShowTree(tx, tree.State.RootPageNumber);
 
 				Assert.Equal(3, tree.State.Depth);
 
@@ -140,7 +140,7 @@ namespace Voron.Tests.Trees
 					tree.Delete("test" + new string('-', 256) + i);
 				}
 
-				DebugStuff.RenderAndShow(tx, tree.State.RootPageNumber);
+				DebugStuff.RenderAndShowTree(tx, tree.State.RootPageNumber);
 
 				Assert.Equal(1, tree.State.Depth);
 			}

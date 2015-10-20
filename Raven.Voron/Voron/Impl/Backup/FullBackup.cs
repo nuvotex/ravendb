@@ -31,7 +31,7 @@ namespace Voron.Impl.Backup
 
 			var dataPager = env.Options.DataPager;
 			var copier = new DataCopier(env.Options.PageSize * 16);
-			Transaction txr = null;
+			LowLevelTransaction txr = null;
 			try
 			{
 

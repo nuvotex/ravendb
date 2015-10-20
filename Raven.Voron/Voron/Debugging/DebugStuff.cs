@@ -13,78 +13,7 @@ namespace Voron.Debugging
 {
 	public class DebugStuff
 	{
-		[Conditional("DEBUG")]
-		public static void RenderFreeSpace(Transaction tx)
-		{
-			RenderAndShow(tx.FreeSpaceRoot);
-		}
-
-		[Conditional("DEBUG")]
-		public static void DumpHumanReadable(Transaction tx, long startPageNumber, string filenamePrefix = null)
-		{
-			if (Debugger.IsAttached == false)
-				return;
-			var path = Path.Combine(Environment.CurrentDirectory, String.Format("{0}tree.hdump", filenamePrefix ?? String.Empty));
-			TreeDumper.DumpHumanReadable(tx, path, tx.GetReadOnlyPage(startPageNumber));
-		}
-
-		public unsafe static bool HasDuplicateBranchReferences(Transaction tx, TreePage start, out long pageNumberWithDuplicates)
-		{
-			var stack = new Stack<TreePage>();
-			var existingTreeReferences = new ConcurrentDictionary<long, List<long>>();
-			stack.Push(start);
-			while (stack.Count > 0)
-			{
-				var currentPage = stack.Pop();
-				if (currentPage.IsBranch)
-				{
-					for (int nodeIndex = 0; nodeIndex < currentPage.NumberOfEntries; nodeIndex++)
-					{
-						var node = currentPage.GetNode(nodeIndex);
-
-						existingTreeReferences.AddOrUpdate(currentPage.PageNumber, new List<long> { node->PageNumber },
-							(branchPageNumber, pageNumberReferences) =>
-							{
-								pageNumberReferences.Add(node->PageNumber);
-								return pageNumberReferences;
-							});
-					}
-
-					for (int nodeIndex = 0; nodeIndex < currentPage.NumberOfEntries; nodeIndex++)
-					{
-						var node = currentPage.GetNode(nodeIndex);
-						if (node->PageNumber < 0 || node->PageNumber > tx.State.NextPageNumber)
-						{
-							throw new InvalidDataException("found invalid reference on branch - tree is corrupted");
-						}
-
-						var child = tx.GetReadOnlyPage(node->PageNumber);
-						stack.Push(child);
-					}
-
-				}
-			}
-
-			Func<long, HashSet<long>> relevantPageReferences =
-				branchPageNumber => new HashSet<long>(existingTreeReferences
-					.Where(kvp => kvp.Key != branchPageNumber)
-					.SelectMany(kvp => kvp.Value));
-
-			// ReSharper disable once LoopCanBeConvertedToQuery
-			foreach (var branchReferences in existingTreeReferences)
-			{
-				if (
-					branchReferences.Value.Any(
-						referencePageNumber => relevantPageReferences(branchReferences.Key).Contains(referencePageNumber)))
-				{
-					pageNumberWithDuplicates = branchReferences.Key;
-					return true;
-				}
-			}
-			pageNumberWithDuplicates = -1;
-			return false;
-		}
-
+	
 		private const string css = @".css-treeview ul,
 .css-treeview li
 {
@@ -202,7 +131,7 @@ namespace Voron.Debugging
 }";
 
 		[Conditional("DEBUG")]
-		public unsafe static void RenderAndShow_FixedSizeTree(Transaction tx, Tree tree, Slice name)
+		public unsafe static void RenderAndShow_FixedSizeTree(LowLevelTransaction tx, Tree tree, Slice name)
 		{
 			RenderHtmlTreeView(writer =>
 			{
@@ -227,10 +156,10 @@ namespace Voron.Debugging
 				else
 				{
 					var header = (FixedSizeTreeHeader.Large*)ptr;
-					writer.WriteLine("<p>Number of entries: {0:#,#;;0}, val size: {1:#,#;;0}.</p>", header->NumberOfEntries, header->ValueSize);
+					writer.WriteLine("<p>Number of entries: {0:#,#;;0}, val size: {1:#,#;;0}.</p>", header->EntriesCount, header->ValueSize);
 					writer.WriteLine("<div class='css-treeview'><ul>");
 
-					var page = tx.GetReadOnlyPage(header->RootPageNumber);
+					var page = tx.GetReadOnlyTreePage(header->RootPageNumber);
 
 					RenderFixedSizeTreePage(tx, page, writer, header, "Root", true);
 
@@ -255,7 +184,7 @@ namespace Voron.Debugging
 			Process.Start(output);
 		}
 
-		private unsafe static void RenderFixedSizeTreePage(Transaction tx, TreePage page, TextWriter sw, FixedSizeTreeHeader.Large* header, string text, bool open)
+		private unsafe static void RenderFixedSizeTreePage(LowLevelTransaction tx, TreePage page, TextWriter sw, FixedSizeTreeHeader.Large* header, string text, bool open)
 		{
 			sw.WriteLine(
 				"<ul><li><input type='checkbox' id='page-{0}' {3} /><label for='page-{0}'>{4}: Page {0:#,#;;0} - {1} - {2:#,#;;0} entries</label><ul>",
@@ -279,7 +208,7 @@ namespace Voron.Debugging
 					if (i == 0)
 						s = "[smallest]";
 
-					RenderFixedSizeTreePage(tx, tx.GetReadOnlyPage(pageNum), sw, header, s, false);
+					RenderFixedSizeTreePage(tx, tx.GetReadOnlyTreePage(pageNum), sw, header, s, false);
 				}
 			}
 
@@ -290,11 +219,11 @@ namespace Voron.Debugging
 		public static void RenderAndShow(Tree tree)
 		{
 			var headerData = string.Format("<p>{0}</p>", tree.State);
-			RenderAndShow(tree.Tx, tree.State.RootPageNumber, headerData);
+			RenderAndShowTree(tree.Llt, tree.State.RootPageNumber, headerData);
 		}
 
 		[Conditional("DEBUG")]
-		public static void RenderAndShow(Transaction tx, long startPageNumber, string headerData = null)
+		public static void RenderAndShowTree(LowLevelTransaction tx, long startPageNumber, string headerData = null)
 		{
 			RenderHtmlTreeView(writer =>
 			{
@@ -302,7 +231,7 @@ namespace Voron.Debugging
 					writer.WriteLine(headerData);
 				writer.WriteLine("<div class='css-treeview'><ul>");
 
-				var page = tx.GetReadOnlyPage(startPageNumber);
+				var page = tx.GetReadOnlyTreePage(startPageNumber);
 				RenderPage(tx, page, writer, "Root", true);
 
 				writer.WriteLine("</ul></div>");
@@ -319,8 +248,8 @@ namespace Voron.Debugging
 				writer.WriteLine(headerData);
 				writer.WriteLine("<div class='css-treeview'><ul>");
 
-				var page = tree.Tx.GetReadOnlyPage(tree.State.RootPageNumber);
-				RenderPage(tree.Tx, page, writer, "Root", true);
+				var page = tree.Llt.GetReadOnlyTreePage(tree.State.RootPageNumber);
+				RenderPage(tree.Llt, page, writer, "Root", true);
 
 				writer.WriteLine("</ul></div>");
 			});
@@ -334,7 +263,7 @@ namespace Voron.Debugging
 			sw.Flush();
 		}
 
-		private unsafe static void RenderPage(Transaction tx, TreePage page, TextWriter sw, string text, bool open)
+		private unsafe static void RenderPage(LowLevelTransaction tx, TreePage page, TextWriter sw, string text, bool open)
 		{
 			sw.WriteLine(
 			   "<ul><li><input type='checkbox' id='page-{0}' {3} /><label for='page-{0}'>{4}: Page {0:#,#;;0} - {1} - {2:#,#;;0} entries</label><ul>",
@@ -357,7 +286,7 @@ namespace Voron.Debugging
 					if (i == 0)
 						key = "[smallest]";
 
-					RenderPage(tx, tx.GetReadOnlyPage(pageNum), sw, key, false);
+					RenderPage(tx, tx.GetReadOnlyTreePage(pageNum), sw, key, false);
 				}
 			}
 			sw.WriteLine("</ul></li></ul>");

@@ -1,304 +1,316 @@
+using System;
 using System.Collections.Generic;
+using Voron.Impl.FileHeaders;
 using Voron.Trees;
+using Voron.Trees.Fixed;
 using Voron.Util.Conversion;
 
 namespace Voron.Impl.FreeSpace
 {
 	public class FreeSpaceHandling : IFreeSpaceHandling
 	{
-		internal const int NumberOfPagesInSection = 256 * 8; // 256 bytes, 8 bits per byte = 2,048 - each section 8 MB in size
+        // 128 bytes, 8 bits per byte = 1,024 - each section 4 MB in size for 4KB pages
+        private const byte SectionSizeInBytes = 128;
+        internal const int NumberOfPagesInSection = SectionSizeInBytes * 8; 
 
-		public long? TryAllocateFromFreeSpace(Transaction tx, int num)
-		{
-			if (tx.State.FreeSpaceRoot == null)
-				return null; // initial setup
+	    private readonly static Slice FreeSpaceKey = "$free-space";
 
-		    if (tx.FreeSpaceRoot.State.EntriesCount == 0)
-		        return null;
+	    public long? TryAllocateFromFreeSpace(LowLevelTransaction tx, int num)
+	    {
+	        if (tx.RootObjects == null)
+	            return null;
 
-			using (var it = tx.FreeSpaceRoot.Iterate())
-			{
-				if (it.Seek(Slice.BeforeAllKeys) == false)
-					return null;
+	        var fixedSizeTree = new FixedSizeTree(tx, tx.RootObjects, FreeSpaceKey, SectionSizeInBytes);
 
-				if (num < NumberOfPagesInSection)
-				{
-					return TryFindSmallValue(tx, it, num);
-				}
-				return TryFindLargeValue(tx, it, num);
-			}
-		}
+	        if (fixedSizeTree.EntriesCount == 0)
+	            return null;
 
-		private long? TryFindLargeValue(Transaction tx, TreeIterator it, int num)
-		{
-			int numberOfNeededFullSections = num / NumberOfPagesInSection;
-			int numberOfExtraBitsNeeded = num % NumberOfPagesInSection;
-			int foundSections = 0;
+            using (var it = fixedSizeTree.Iterate())
+            {
+                if (it.Seek(0) == false)
+                    return null;
 
-			Slice startSection = null;
-			long? startSectionId = null;
-			var sections = new List<Slice>();
+                if (num < NumberOfPagesInSection)
+                {
+                    return TryFindSmallValue(fixedSizeTree, it, num);
+                }
+                return TryFindLargeValue(fixedSizeTree, it, num);
+            }
+        }
 
-			do
-			{
-				var stream = it.CreateReaderForCurrent();
-				{
-					var current = new StreamBitArray(stream);
-				    var currentSectionId = it.CurrentKey.CreateReader().ReadBigEndianInt64();
+        private long? TryFindLargeValue(FixedSizeTree freeSpaceTree, FixedSizeTree.IFixedSizeIterator it, int num)
+        {
+            int numberOfNeededFullSections = num / NumberOfPagesInSection;
+            int numberOfExtraBitsNeeded = num % NumberOfPagesInSection;
 
-					//need to find full free pages
-					if (current.SetCount < NumberOfPagesInSection)
-					{
-						ResetSections(ref foundSections, sections, ref startSection, ref startSectionId);
-						continue;
-					}
+            var info = new FoundSectionsInfo();
+            do
+            {
+                var stream = it.CreateReaderForCurrent();
+                {
+                    var current = new StreamBitArray(stream);
+                    var currentSectionId = it.CurrentKey;
 
-					//those sections are not following each other in the memory
-					if (startSectionId != null && currentSectionId != startSectionId + foundSections)
-					{
-						ResetSections(ref foundSections, sections, ref startSection, ref startSectionId);
-					}
+                    //need to find full free pages
+                    if (current.SetCount < NumberOfPagesInSection)
+                    {
+                        info.Clear();
+                        continue;
+                    }
 
-					//set the first section of the sequence
-					if (startSection == null)
-					{
-						startSection = it.CurrentKey;
-						startSectionId = currentSectionId;
-					}
+                    //those sections are not following each other in the memory
+                    if (info.StartSectionId != null && currentSectionId != info.StartSectionId + info.Sections.Count)
+                    {
+                        info.Clear();
+                    }
 
-					sections.Add(it.CurrentKey);
-					foundSections++;
+                    //set the first section of the sequence
+                    if (info.StartSection == -1)
+                    {
+                        info.StartSection = it.CurrentKey;
+                        info.StartSectionId = currentSectionId;
+                    }
 
-					if (foundSections != numberOfNeededFullSections)
-						continue;
+                    info.Sections.Add(it.CurrentKey);
 
-					//we found enough full sections now we need just a bit more
-					if (numberOfExtraBitsNeeded == 0)
-					{
-						foreach (var section in sections)
-						{
-							tx.FreeSpaceRoot.Delete(section);
-						}
+                    if (info.Sections.Count != numberOfNeededFullSections)
+                        continue;
 
-						return startSectionId * NumberOfPagesInSection;
-					}
+                    //we found enough full sections now we need just a bit more
+                    if (numberOfExtraBitsNeeded == 0)
+                    {
+                        foreach (var section in info.Sections)
+                        {
+                            freeSpaceTree.Delete(section);
+                        }
 
-					var nextSectionId = currentSectionId + 1;
-					var nextId = new Slice(EndianBitConverter.Big.GetBytes(nextSectionId));
-					var read = tx.FreeSpaceRoot.Read(nextId);
-					if (read == null)
-					{
-						//not a following next section
-						ResetSections(ref foundSections, sections, ref startSection, ref startSectionId);
-						continue;
-					}
+                        return info.StartSectionId * NumberOfPagesInSection;
+                    }
 
-					var next = new StreamBitArray(read.Reader);
+                    var nextSectionId = currentSectionId + 1;
+                    var read = freeSpaceTree.Read(nextSectionId);
+                    if (read == null)
+                    {
+                        //not a following next section
+                        info.Clear();
+                        continue;
+                    }
 
-					if (next.HasStartRangeCount(numberOfExtraBitsNeeded) == false)
-					{
-						//not enough start range count
-						ResetSections(ref foundSections, sections, ref startSection, ref startSectionId);
-						continue;
-					}
+                    var next = new StreamBitArray(read.CreateReader());
 
-					//mark selected bits to false
-					if (next.SetCount == numberOfExtraBitsNeeded)
-					{
-						tx.FreeSpaceRoot.Delete(nextId);
-					}
-					else
-					{
-						for (int i = 0; i < numberOfExtraBitsNeeded; i++)
-						{
-							next.Set(i, false);
-						}
-						tx.FreeSpaceRoot.Add(nextId, next.ToStream());
-					}
+                    if (next.HasStartRangeCount(numberOfExtraBitsNeeded) == false)
+                    {
+                        //not enough start range count
+                        info.Clear();
+                        continue;
+                    }
 
-					foreach (var section in sections)
-					{
-						tx.FreeSpaceRoot.Delete(section);
-					}
+                    //mark selected bits to false
+                    if (next.SetCount == numberOfExtraBitsNeeded)
+                    {
+                        freeSpaceTree.Delete(nextSectionId);
+                    }
+                    else
+                    {
+                        for (int i = 0; i < numberOfExtraBitsNeeded; i++)
+                        {
+                            next.Set(i, false);
+                        }
+                        freeSpaceTree.Add(nextSectionId, next.ToSlice());
+                    }
 
-					return startSectionId * NumberOfPagesInSection;
-				}
-			} while (it.MoveNext());
+                    foreach (var section in info.Sections)
+                    {
+                        freeSpaceTree.Delete(section);
+                    }
 
-			return null;
-		}
+                    return info.StartSectionId * NumberOfPagesInSection;
+                }
+            } while (it.MoveNext());
 
-		private static void ResetSections(ref int foundSections, List<Slice> sections, ref Slice startSection, ref long? startSectionId)
-		{
-			foundSections = 0;
-			startSection = null;
-			startSectionId = null;
-			sections.Clear();
-		}
+            return null;
+        }
 
-		private long? TryFindSmallValue(Transaction tx, TreeIterator it, int num)
-		{
-			do
-			{
-			    var stream = it.CreateReaderForCurrent();
-				{
-					var current = new StreamBitArray(stream);
-				    var currentSectionId = it.CurrentKey.CreateReader().ReadBigEndianInt64();
+	    private class FoundSectionsInfo
+	    {
 
-					long? page;
-					if (current.SetCount < num)
-					{
-						if (TryFindSmallValueMergingTwoSections(tx, it.CurrentKey, num, current, currentSectionId, out page))
-							return page;
-						continue;
-					}
+	        public List<long> Sections = new List<long>();
 
-					if (TryFindContinuousRange(tx, it, num, current, currentSectionId, out page))
-						return page;
+	        public long StartSection = -1;
 
-					//could not find a continuous so trying to merge
-					if (TryFindSmallValueMergingTwoSections(tx, it.CurrentKey, num, current, currentSectionId, out page))
-						return page;
-				}
-			} while (it.MoveNext());
-
-			return null;
-		}
-
-		private bool TryFindContinuousRange(Transaction tx, TreeIterator it, int num, StreamBitArray current, long currentSectionId, out long? page)
-		{
-			page = -1;
-			var start = -1;
-			var count = 0;
-			for (int i = 0; i < NumberOfPagesInSection; i++)
-			{
-				if (current.Get(i))
-				{
-					if (start == -1)
-						start = i;
-					count++;
-					if (count == num)
-					{
-						page = currentSectionId * NumberOfPagesInSection + start;
-						break;
-					}
-				}
-				else
-				{
-					start = -1;
-					count = 0;
-				}
-			}
-
-			if (count != num)
-				return false;
-
-			if (current.SetCount == num)
-			{
-				tx.FreeSpaceRoot.Delete(it.CurrentKey);
-			}
-			else
-			{
-				for (int i = 0; i < num; i++)
-				{
-					current.Set(i + start, false);
-				}
-
-				tx.FreeSpaceRoot.Add(it.CurrentKey, current.ToStream());
-			}
-
-			return true;
-		}
-
-		private static bool TryFindSmallValueMergingTwoSections(Transaction tx, Slice currentSectionIdSlice, int num, StreamBitArray current, long currentSectionId, out long? result)
-		{
-			result = -1;
-			var currentEndRange = current.GetEndRangeCount();
-			if (currentEndRange == 0)
-				return false;
-
-			var nextSectionId = currentSectionId + 1;
-
-			var nextId = new Slice(EndianBitConverter.Big.GetBytes(nextSectionId));
-			var read = tx.FreeSpaceRoot.Read(nextId);
-			if (read == null)
-				return false;
-
-			var next = new StreamBitArray(read.Reader);
-
-			var nextRange = num - currentEndRange;
-			if (next.HasStartRangeCount(nextRange) == false)
-				return false;
-
-			if (next.SetCount == nextRange)
-			{
-				tx.FreeSpaceRoot.Delete(nextId);
-			}
-			else
-			{
-				for (int i = 0; i < nextRange; i++)
-				{
-					next.Set(i, false);
-				}
-				tx.FreeSpaceRoot.Add(nextId, next.ToStream());
-			}
-
-			if (current.SetCount == currentEndRange)
-			{
-				tx.FreeSpaceRoot.Delete(currentSectionIdSlice);
-			}
-			else
-			{
-				for (int i = 0; i < currentEndRange; i++)
-				{
-					current.Set(NumberOfPagesInSection - 1 - i, false);
-				}
-				tx.FreeSpaceRoot.Add(currentSectionIdSlice, current.ToStream());
-			}
+	        public long? StartSectionId;
 
 
-			result = currentSectionId * NumberOfPagesInSection + (NumberOfPagesInSection - currentEndRange);
-			return true;
-		}
+            public void Clear()
+            {
+                StartSection = -1;
+                StartSectionId = null;
+                Sections.Clear();
+            }
+	    }
 
-		public List<long> AllPages(Transaction tx)
-		{
-			if (tx.FreeSpaceRoot.State.EntriesCount == 0)
-				return new List<long>();
 
-			using (var it = tx.FreeSpaceRoot.Iterate())
-			{
-				if (it.Seek(Slice.BeforeAllKeys) == false)
-					return new List<long>();
+        private long? TryFindSmallValue(FixedSizeTree freeSpaceTree, FixedSizeTree.IFixedSizeIterator it, int num)
+        {
+            do
+            {
+                var current = new StreamBitArray(it.CreateReaderForCurrent());
 
-				var freePages = new List<long>();
+                long? page;
+                if (current.SetCount < num)
+                {
+                    if (TryFindSmallValueMergingTwoSections(freeSpaceTree, it.CurrentKey, num, current, out page))
+                        return page;
+                    continue;
+                }
 
-				do
-				{
-					var stream = it.CreateReaderForCurrent();
+                if (TryFindContinuousRange(freeSpaceTree, it, num, current, it.CurrentKey, out page))
+                    return page;
 
-					var current = new StreamBitArray(stream);
-					var currentSectionId = it.CurrentKey.CreateReader().ReadBigEndianInt64();
+                //could not find a continuous so trying to merge
+                if (TryFindSmallValueMergingTwoSections(freeSpaceTree, it.CurrentKey, num, current, out page))
+                    return page;
+            } while (it.MoveNext());
 
-					for (var i = 0; i < NumberOfPagesInSection; i++)
-					{
-						if (current.Get(i))
-							freePages.Add(currentSectionId * NumberOfPagesInSection + i);
-					}
-				} while (it.MoveNext());
+            return null;
+        }
 
-				return freePages;
-			}
-		}
+        private bool TryFindContinuousRange(FixedSizeTree freeSpaceTree, FixedSizeTree.IFixedSizeIterator it, int num, 
+            StreamBitArray current, long currentSectionId, out long? page)
+        {
+            page = -1;
+            var start = -1;
+            var count = 0;
+            for (int i = 0; i < NumberOfPagesInSection; i++)
+            {
+                if (current.Get(i))
+                {
+                    if (start == -1)
+                        start = i;
+                    count++;
+                    if (count == num)
+                    {
+                        page = currentSectionId * NumberOfPagesInSection + start;
+                        break;
+                    }
+                }
+                else
+                {
+                    start = -1;
+                    count = 0;
+                }
+            }
 
-		public void FreePage(Transaction tx, long pageNumber)
-		{
-			var section = pageNumber / NumberOfPagesInSection;
-			var sectionKey = new Slice(EndianBitConverter.Big.GetBytes(section));
-			var result = tx.FreeSpaceRoot.Read(sectionKey);
-			var sba = result == null ? new StreamBitArray() : new StreamBitArray(result.Reader);
-			sba.Set((int)(pageNumber % NumberOfPagesInSection), true);
-			tx.FreeSpaceRoot.Add(sectionKey, sba.ToStream());
-		}
+            if (count != num)
+                return false;
+
+            if (current.SetCount == num)
+            {
+                freeSpaceTree.Delete(it.CurrentKey);
+            }
+            else
+            {
+                for (int i = 0; i < num; i++)
+                {
+                    current.Set(i + start, false);
+                }
+
+                freeSpaceTree.Add(it.CurrentKey, current.ToSlice());
+            }
+
+            return true;
+        }
+
+        private static bool TryFindSmallValueMergingTwoSections(FixedSizeTree freeSpacetree, long currentSectionId, int num, 
+            StreamBitArray current, out long? result)
+        {
+            result = -1;
+            var currentEndRange = current.GetEndRangeCount();
+            if (currentEndRange == 0)
+                return false;
+
+            var nextSectionId = currentSectionId + 1;
+
+            var read = freeSpacetree.Read(nextSectionId);
+            if (read == null)
+                return false;
+
+            var next = new StreamBitArray(read.CreateReader());
+
+            var nextRange = num - currentEndRange;
+            if (next.HasStartRangeCount(nextRange) == false)
+                return false;
+
+            if (next.SetCount == nextRange)
+            {
+                freeSpacetree.Delete(nextSectionId);
+            }
+            else
+            {
+                for (int i = 0; i < nextRange; i++)
+                {
+                    next.Set(i, false);
+                }
+                freeSpacetree.Add(nextSectionId, next.ToSlice());
+            }
+
+            if (current.SetCount == currentEndRange)
+            {
+                freeSpacetree.Delete(currentSectionId);
+            }
+            else
+            {
+                for (int i = 0; i < currentEndRange; i++)
+                {
+                    current.Set(NumberOfPagesInSection - 1 - i, false);
+                }
+                freeSpacetree.Add(currentSectionId, current.ToSlice());
+            }
+
+
+            result = currentSectionId * NumberOfPagesInSection + (NumberOfPagesInSection - currentEndRange);
+            return true;
+        }
+
+        public List<long> AllPages(LowLevelTransaction tx)
+        {
+            var freeSpaceTree = new FixedSizeTree(tx, tx.RootObjects, FreeSpaceKey, SectionSizeInBytes);
+            if (freeSpaceTree.EntriesCount == 0)
+                return new List<long>();
+
+            using (var it = freeSpaceTree.Iterate())
+            {
+                if (it.Seek(0) == false)
+                    return new List<long>();
+
+                var freePages = new List<long>();
+
+                do
+                {
+                    var stream = it.CreateReaderForCurrent();
+
+                    var current = new StreamBitArray(stream);
+                    var currentSectionId = it.CurrentKey;
+
+                    for (var i = 0; i < NumberOfPagesInSection; i++)
+                    {
+                        if (current.Get(i))
+                            freePages.Add(currentSectionId * NumberOfPagesInSection + i);
+                    }
+                } while (it.MoveNext());
+
+                return freePages;
+            }
+        }
+
+        public void FreePage(LowLevelTransaction tx, long pageNumber)
+        {
+            var freeSpaceTree = new FixedSizeTree(tx,tx.RootObjects, FreeSpaceKey, SectionSizeInBytes);
+            var section = pageNumber / NumberOfPagesInSection;
+            var result = freeSpaceTree.Read(section);
+            var sba = result == null ? new StreamBitArray() : new StreamBitArray(result.CreateReader());
+            sba.Set((int)(pageNumber % NumberOfPagesInSection), true);
+            freeSpaceTree.Add(section, sba.ToSlice());
+        }
 	}
 }

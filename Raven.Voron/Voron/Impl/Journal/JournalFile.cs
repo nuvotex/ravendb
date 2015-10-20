@@ -135,7 +135,7 @@ namespace Voron.Impl.Journal
 		/// <summary>
 		/// write transaction's raw page data into journal. returns write page position
 		/// </summary>
-		public long Write(Transaction tx, IntPtr[] pages)
+		public long Write(LowLevelTransaction tx, IntPtr[] pages)
 		{
             var ptt = new Dictionary<long, PagePosition>(NumericEqualityComparer.Instance);
 			var unused = new HashSet<PagePosition>();
@@ -158,7 +158,7 @@ namespace Voron.Impl.Journal
 			return pageWritePos;
 		}      
 
-	    private void UpdatePageTranslationTable(Transaction tx, HashSet<PagePosition> unused, Dictionary<long, PagePosition> ptt)
+	    private void UpdatePageTranslationTable(LowLevelTransaction tx, HashSet<PagePosition> unused, Dictionary<long, PagePosition> ptt)
 	    {
 			foreach (var freedPageNumber in tx.GetFreedPagesNumbers())
 			{
@@ -219,7 +219,7 @@ namespace Voron.Impl.Journal
 
         public bool DeleteOnClose { set { _journalWriter.DeleteOnClose = value; } }
 	    
-	    public void FreeScratchPagesOlderThan(Transaction tx, long lastSyncedTransactionId, bool forceToFreeAllPages = false)
+	    public void FreeScratchPagesOlderThan(LowLevelTransaction tx, long lastSyncedTransactionId, bool forceToFreeAllPages = false)
 	    {
 		    if (tx == null) throw new ArgumentNullException("tx");
 		    var unusedPages = new List<PagePosition>();

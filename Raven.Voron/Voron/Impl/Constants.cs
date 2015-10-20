@@ -26,8 +26,7 @@ namespace Voron.Impl
 
 		public const int CurrentVersion = 5;
 
-		public const string RootTreeName = "Root";
-		public const string FreeSpaceTreeName = "Free Space";
+		public const string RootTreeName = "$Root";
 
 		public const string DatabaseFilename = "Raven.voron";
 
