@@ -77,6 +77,9 @@ namespace Voron
 			}
 		}
 
+        // if set to a non zero value, will check that the expected schema is there
+        public int SchemaVersion { get; set; }
+
 		public long MaxScratchBufferSize { get; set; }
 
 		public long MaxNumberOfPagesInMergedTransaction { get; set; }
