@@ -16,22 +16,22 @@ namespace Voron.Tests
 			var buffer = new byte[1000];
 			random.NextBytes(buffer);
 
-			using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+			using (var tx = Env.WriteTransaction())
 			{
-				Env.CreateTree(tx, "foo");
+                tx.CreateTree( "foo");
 
 				tx.Commit();
 			}
 
-			using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+			using (var tx = Env.WriteTransaction())
 			{
-				tx.Environment.CreateTree(tx,"foo").MultiAdd("ChildTreeKey", new Slice(buffer));
+				tx.ReadTree("foo").MultiAdd("ChildTreeKey", new Slice(buffer));
 				tx.Commit();
 			}
 
-			using (var tx = Env.NewTransaction(TransactionFlags.Read))
+			using (var tx = Env.ReadTransaction())
 			{
-				using (var fetchedDataIterator = tx.Environment.CreateTree(tx,"foo").MultiRead("ChildTreeKey"))
+				using (var fetchedDataIterator = tx.ReadTree("foo").MultiRead("ChildTreeKey"))
 				{
 					fetchedDataIterator.Seek(Slice.BeforeAllKeys);
 
@@ -53,26 +53,28 @@ namespace Voron.Tests
 		        inputData.Add(RandomString(INPUT_DATA_SIZE));
 		    }
 
-		    using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+		    using (var tx = Env.WriteTransaction())
 		    {
+		        var tree = tx.CreateTree("foo");
 		        for (int i = 0; i < INPUT_COUNT; i++)
 		        {
-		            tx.Root.MultiAdd(CHILDTREE_KEY, inputData[i]);
+		            tree.MultiAdd(CHILDTREE_KEY, inputData[i]);
 		        }
 		        tx.Commit();
 		    }
 
-		    using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+		    using (var tx = Env.WriteTransaction())
 		    {
-		        for (int i = 0; i < INPUT_COUNT - 1; i++)
+                var tree = tx.CreateTree("foo");
+                for (int i = 0; i < INPUT_COUNT - 1; i++)
 		        {
-		            tx.Root.MultiDelete(CHILDTREE_KEY, inputData[i]);
+		            tree.MultiDelete(CHILDTREE_KEY, inputData[i]);
 		            inputData.Remove(inputData[i]);
 		        }
 		        tx.Commit();
 		    }
 		    
-            ValidateInputExistence(inputData, CHILDTREE_KEY, INPUT_DATA_SIZE, Constants.RootTreeName);
+            ValidateInputExistence(inputData, CHILDTREE_KEY, INPUT_DATA_SIZE, "foo");
 		}
 
 	    [Fact]
@@ -88,27 +90,29 @@ namespace Voron.Tests
 				inputData.Add(RandomString(INPUT_DATA_SIZE));
 			}
 
-			using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+			using (var tx = Env.WriteTransaction())
 			{
+			    var tree = tx.CreateTree("foo");
 				for (int i = 0; i < INPUT_COUNT; i++)
 				{
-                    tx.Root.MultiAdd(CHILDTREE_KEY, inputData[i]);
+                    tree.MultiAdd(CHILDTREE_KEY, inputData[i]);
 				}
 				tx.Commit();
 			}
 
-			using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+			using (var tx = Env.WriteTransaction())
 			{
-				for (int i = 0; i < INPUT_COUNT; i++)
+                var tree = tx.CreateTree("foo");
+                for (int i = 0; i < INPUT_COUNT; i++)
 				{
-                    tx.Root.MultiDelete(CHILDTREE_KEY, inputData[i]);
+                    tree.MultiDelete(CHILDTREE_KEY, inputData[i]);
 				}
 				tx.Commit();
 			}
 
-			using (var tx = Env.NewTransaction(TransactionFlags.Read))
+			using (var tx = Env.ReadTransaction())
 			{
-				var iterator = tx.Root.MultiRead(CHILDTREE_KEY);
+				var iterator = tx.ReadTree("foo").MultiRead(CHILDTREE_KEY);
 				iterator.Seek(Slice.BeforeAllKeys);
 				Assert.False(iterator.MoveNext());
 			}
@@ -121,27 +125,27 @@ namespace Voron.Tests
 			var buffer = new byte[1000];
 			random.NextBytes(buffer);
 
-			using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+			using (var tx = Env.WriteTransaction())
 			{
-				Env.CreateTree(tx, "foo");
+			    tx.CreateTree("foo");
 				tx.Commit();
 			}
 
-			using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+			using (var tx = Env.WriteTransaction())
 			{
-				tx.Environment.CreateTree(tx,"foo").MultiAdd("ChildTreeKey", new Slice(buffer));
+				tx.CreateTree("foo").MultiAdd("ChildTreeKey", new Slice(buffer));
 				tx.Commit();
 			}
 
-			using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+			using (var tx = Env.WriteTransaction())
 			{
-				tx.Environment.CreateTree(tx,"foo").MultiDelete("ChildTreeKey", new Slice(buffer));
+				tx.CreateTree("foo").MultiDelete("ChildTreeKey", new Slice(buffer));
 				tx.Commit();
 			}
 
-			using (var tx = Env.NewTransaction(TransactionFlags.Read))
+			using (var tx = Env.ReadTransaction())
 			{
-				Assert.Equal(typeof(EmptyIterator), tx.Environment.CreateTree(tx,"foo").MultiRead("ChildTreeKey").GetType());
+				Assert.Equal(typeof(EmptyIterator), tx.ReadTree("foo").MultiRead("ChildTreeKey").GetType());
 			}
 		}
 
@@ -159,19 +163,20 @@ namespace Voron.Tests
 		    }
 
 		    var indexToDelete = new Random(1234).Next(0, INPUT_COUNT - 1);
-		    using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+		    using (var tx = Env.WriteTransaction())
 		    {
+		        var tree = tx.CreateTree("foo");
 		        for (int i = 0; i < INPUT_COUNT; i++)
 		        {
-		            tx.Root.MultiAdd(CHILDTREE_KEY, inputData[i]);
+                    tree.MultiAdd(CHILDTREE_KEY, inputData[i]);
 		        }
 
-		        tx.Root.MultiDelete(CHILDTREE_KEY, inputData[indexToDelete]);
+                tree.MultiDelete(CHILDTREE_KEY, inputData[indexToDelete]);
 		        tx.Commit();
 		    }
 
 		    inputData.Remove(inputData[indexToDelete]);
-		    ValidateInputExistence(inputData, CHILDTREE_KEY, INPUT_DATA_SIZE, Constants.RootTreeName);
+		    ValidateInputExistence(inputData, CHILDTREE_KEY, INPUT_DATA_SIZE, "foo");
 		}
 
 	    [Fact]
@@ -187,21 +192,21 @@ namespace Voron.Tests
 				inputData.Add(RandomString(INPUT_DATA_SIZE));
 			}
 
-			using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+			using (var tx = Env.WriteTransaction())
 			{
-				Env.CreateTree(tx, "foo");
+				tx.CreateTree("foo");
 				tx.Commit();
 			}
 
 			var indexToDelete = new Random(1234).Next(0, INPUT_COUNT - 1);
-			using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+			using (var tx = Env.WriteTransaction())
 			{
 				for (int i = 0; i < INPUT_COUNT; i++)
 				{
-					tx.Environment.CreateTree(tx,"foo").MultiAdd(CHILDTREE_KEY, inputData[i]);
+					tx.CreateTree("foo").MultiAdd(CHILDTREE_KEY, inputData[i]);
 				}
 
-				tx.Environment.CreateTree(tx,"foo").MultiDelete(CHILDTREE_KEY, inputData[indexToDelete]);
+				tx.CreateTree("foo").MultiDelete(CHILDTREE_KEY, inputData[indexToDelete]);
 				tx.Commit();
 			}
 
@@ -223,26 +228,26 @@ namespace Voron.Tests
 				inputData.Add(RandomString(INPUT_DATA_SIZE));
 			}
 
-			using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+			using (var tx = Env.WriteTransaction())
 			{
-				Env.CreateTree(tx, "foo");
+				tx.CreateTree( "foo");
 				tx.Commit();
 			}
 
-			using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+			using (var tx = Env.WriteTransaction())
 			{
 				for (int i = 0; i < INPUT_COUNT; i++)
 				{
-					tx.Environment.CreateTree(tx,"foo").MultiAdd(CHILDTREE_KEY, inputData[i]);
+					tx.CreateTree("foo").MultiAdd(CHILDTREE_KEY, inputData[i]);
 				}
 				tx.Commit();
 			}
 
 			var indexToDelete = new Random(1234).Next(0, INPUT_COUNT - 1);
 
-			using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+			using (var tx = Env.WriteTransaction())
 			{
-				tx.Environment.CreateTree(tx,"foo").MultiDelete(CHILDTREE_KEY, inputData[indexToDelete]);
+				tx.CreateTree("foo").MultiDelete(CHILDTREE_KEY, inputData[indexToDelete]);
 				tx.Commit();
 			}
 
@@ -256,22 +261,26 @@ namespace Voron.Tests
 		{
 			const string CHILDTREE_KEY = "ChildTree";
 			const string CHILDTREE_VALUE = "Foo";
-			using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+			using (var tx = Env.WriteTransaction())
 			{
-				tx.Root.MultiAdd(CHILDTREE_KEY, CHILDTREE_VALUE);
-				tx.Root.MultiAdd(CHILDTREE_KEY, CHILDTREE_VALUE);
+			    var tree = tx.CreateTree("foo");
+                tree.MultiAdd(CHILDTREE_KEY, CHILDTREE_VALUE);
+                tree.MultiAdd(CHILDTREE_KEY, CHILDTREE_VALUE);
 				tx.Commit();
 			}
 
-			using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+			using (var tx = Env.WriteTransaction())
 			{
-				Assert.DoesNotThrow(() => tx.Root.MultiDelete(CHILDTREE_KEY, CHILDTREE_VALUE));
+                var tree = tx.CreateTree("foo");
+                tree.MultiDelete(CHILDTREE_KEY, CHILDTREE_VALUE);
 				tx.Commit();
 			}
 
-			using (var tx = Env.NewTransaction(TransactionFlags.Read))
+			using (var tx = Env.ReadTransaction())
 			{
-				Assert.Equal(0, tx.Root.ReadVersion(CHILDTREE_KEY));
+                var tree = tx.CreateTree("foo");
+                
+                Assert.Equal(0, tree.ReadVersion(CHILDTREE_KEY));
 			}
 		}
 		
@@ -288,28 +297,30 @@ namespace Voron.Tests
 				inputData.Add(RandomString(INPUT_DATA_SIZE));
 			}
 
-			using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+			using (var tx = Env.WriteTransaction())
 			{
-				for (int i = 0; i < INPUT_COUNT; i++)
+                var tree = tx.CreateTree("foo");
+                for (int i = 0; i < INPUT_COUNT; i++)
 				{
-					tx.Root.MultiAdd(CHILDTREE_KEY, inputData[i]);
+                    tree.MultiAdd(CHILDTREE_KEY, inputData[i]);
 				}
 				tx.Commit();
 			}
 
-            ValidateInputExistence(inputData.ToList(), CHILDTREE_KEY, INPUT_DATA_SIZE, Constants.RootTreeName);
+            ValidateInputExistence(inputData.ToList(), CHILDTREE_KEY, INPUT_DATA_SIZE, "foo");
 
 			var indexToDelete = new Random(1234).Next(0, INPUT_COUNT - 1);
 
-			using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+			using (var tx = Env.WriteTransaction())
 			{
-				tx.Root.MultiDelete(CHILDTREE_KEY, inputData[indexToDelete]);
+                var tree = tx.CreateTree("foo");
+                tree.MultiDelete(CHILDTREE_KEY, inputData[indexToDelete]);
 				tx.Commit();
 			}
 
 			inputData.Remove(inputData[indexToDelete]);
 
-            ValidateInputExistence(inputData, CHILDTREE_KEY, INPUT_DATA_SIZE, Constants.RootTreeName);
+            ValidateInputExistence(inputData, CHILDTREE_KEY, INPUT_DATA_SIZE, "foo");
 		}
 
 		[Fact]
@@ -325,23 +336,25 @@ namespace Voron.Tests
 				inputData.Add(RandomString(INPUT_DATA_SIZE));
 			}
 
-			using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+			using (var tx = Env.WriteTransaction())
 			{
-				for (int i = 0; i < INPUT_COUNT; i++)
+			    var tree = tx.CreateTree("foo");
+
+                for (int i = 0; i < INPUT_COUNT; i++)
 				{
-					tx.Root.MultiAdd(CHILDTREE_KEY, inputData[i]);
+					tree.MultiAdd(CHILDTREE_KEY, inputData[i]);
 				}
 				tx.Commit();
 			}
 
-            ValidateInputExistence(inputData, CHILDTREE_KEY, INPUT_DATA_SIZE, Constants.RootTreeName);
+            ValidateInputExistence(inputData, CHILDTREE_KEY, INPUT_DATA_SIZE, "foo");
 		}
 
 		private void ValidateInputExistence(List<string> inputData, string childtreeKey, int inputDataSize, string treeName)
 		{
-			using (var tx = Env.NewTransaction(TransactionFlags.Read))
+			using (var tx = Env.ReadTransaction())
 			{
-			    var targetTree = Env.CreateTree(tx, treeName);
+			    var targetTree = tx.ReadTree(treeName);
 
 				int fetchedEntryCount = 0;
 				var inputEntryCount = inputData.Count;
