@@ -11,7 +11,7 @@ using Sparrow;
 
 namespace Voron
 {
-	public sealed unsafe class Slice : MemorySlice
+	public sealed unsafe class Slice 
 	{        
 		public static Slice AfterAllKeys = new Slice(SliceOptions.AfterAllKeys);
 		public static Slice BeforeAllKeys = new Slice(SliceOptions.BeforeAllKeys);
@@ -19,31 +19,59 @@ namespace Voron
 
         internal byte[] Array;
 		internal byte* Pointer;
+        public ushort Size;
+        public ushort KeyLength;
+        public SliceOptions Options;
 
-		public Slice(SliceOptions options) : base( options )
-		{}
+
+        private Slice()
+        { }
+
+	    public Slice(SliceOptions options)
+        {
+            this.Options = options;
+        }
+
+        private Slice(SliceOptions options, ushort size)
+        {
+            this.Options = options;
+            this.Size = size;
+            this.KeyLength = size;
+        }
+
+	    private Slice(SliceOptions options, ushort size, ushort keyLength)
+        {
+            this.Options = options;
+            this.Size = size;
+            this.KeyLength = keyLength;
+        }
+
+        public bool Equals(Slice other)
+        {
+            return Compare(other) == 0;
+        }
 
 		public Slice(byte* key, ushort size) 
-            : base( SliceOptions.Key, size, size )
+            : this( SliceOptions.Key, size, size )
 		{
 			this.Pointer = key;
 		}
 
         public Slice(byte[] key)
-            : base(SliceOptions.Key, (ushort)key.Length)
+            : this(SliceOptions.Key, (ushort)key.Length)
 		{
             this.Array = key;
 		}
 
 		public Slice(Slice other, ushort size) 
-            : base ( other.Options, size, size )
+            : this( other.Options, size, size )
 		{
             Array = other.Array;
             Pointer = other.Pointer;
 		}
 
 		public Slice(byte[] key, ushort size) 
-            : base ( SliceOptions.Key, size, size )
+            : this( SliceOptions.Key, size, size )
 		{
             Debug.Assert(key != null);
 			Array = key;
@@ -188,9 +216,8 @@ namespace Voron
             return new string(result);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal int CompareDataInline(Slice other, ushort size)
-        {
+	    private int CompareData(Slice other, ushort size)
+		{
             if (Array != null)
             {
                 fixed (byte* a = Array)
@@ -214,15 +241,6 @@ namespace Voron
                 }
             }
             else return Memory.CompareInline(Pointer, other.Pointer, size);
-        }
-
-        protected override int CompareData(MemorySlice other, ushort size)
-		{
-            var otherSlice = other as Slice;
-			if (otherSlice != null)
-                return CompareDataInline(otherSlice, size);
-
-			throw new NotSupportedException("Cannot compare because of unknown slice type: " + other.GetType());
 		}      
 
 
@@ -231,7 +249,7 @@ namespace Voron
 			return new Slice(Encoding.UTF8.GetBytes(s));
 		}
 
-		public override void CopyTo(byte* dest)
+		public void CopyTo(byte* dest)
 		{
 			if (Array == null)
 			{
@@ -244,7 +262,7 @@ namespace Voron
 			}
 		}
 
-		public override Slice ToSlice()
+		public Slice ToSlice()
 		{
 			return new Slice(this, Size);
 		}
@@ -317,7 +335,7 @@ namespace Voron
 	        return new ValueReader(Pointer, Size);
 	    }
 
-		public override Slice Skip(ushort bytesToSkip)
+		public Slice Skip(ushort bytesToSkip)
 		{
 			if (bytesToSkip == 0)
 				return new Slice(this, Size);
@@ -331,11 +349,6 @@ namespace Voron
 			Buffer.BlockCopy(Array, bytesToSkip, array, 0, toAllocate);
 
 			return new Slice(array);
-		}
-
-		public override void PrepareForSearching()
-		{
-
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -356,9 +369,34 @@ namespace Voron
             slice.Array = null;
         }
 		
-		public override void Set(TreeNodeHeader* node)
+		public void Set(TreeNodeHeader* node)
 		{
             SetInline(this, node);
 		}
-	}
+
+        public int Compare(Slice other)
+        {
+            Debug.Assert(Options == SliceOptions.Key);
+            Debug.Assert(other.Options == SliceOptions.Key);
+
+            var srcKey = this.KeyLength;
+            var otherKey = other.KeyLength;
+            var length = srcKey <= otherKey ? srcKey : otherKey;
+
+            var r = CompareData(other, length);
+            if (r != 0)
+                return r;
+
+            return srcKey - otherKey;
+        }
+
+        public bool StartsWith(Slice other)
+        {
+            if (KeyLength < other.KeyLength)
+                return false;
+
+            return CompareData(other, other.KeyLength) == 0;
+        }
+
+    }
 }
