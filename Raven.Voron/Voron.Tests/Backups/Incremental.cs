@@ -36,11 +36,12 @@ namespace Voron.Tests.Backups
 			var buffer = new byte[8192];
 			random.NextBytes(buffer);
 
-			using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+			using (var tx = Env.WriteTransaction())
 			{
-				for (int i = 0; i < 500; i++)
+                var tree = tx.CreateTree("foo");
+                for (int i = 0; i < 500; i++)
 				{
-					tx.Root.Add			("items/" + i, new MemoryStream(buffer));
+					tree.Add			("items/" + i, new MemoryStream(buffer));
 				}
 
 				tx.Commit();
@@ -56,11 +57,12 @@ namespace Voron.Tests.Backups
 			using (var env = new StorageEnvironment(options))
 			{
 
-				using (var tx = env.NewTransaction(TransactionFlags.Read))
+				using (var tx = env.ReadTransaction())
 				{
-					for (int i = 0; i < 500; i++)
+                    var tree = tx.CreateTree("foo");
+                    for (int i = 0; i < 500; i++)
 					{
-						var readResult = tx.Root.Read("items/" + i);
+						var readResult = tree.Read("items/" + i);
 						Assert.NotNull(readResult);
 						var memoryStream = new MemoryStream();
 						readResult.Reader.CopyTo(memoryStream);
@@ -79,11 +81,12 @@ namespace Voron.Tests.Backups
 			var buffer = new byte[1024];
 			random.NextBytes(buffer);
 
-			using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+			using (var tx = Env.WriteTransaction())
 			{
-				for (int i = 0; i < 300; i++)
+                var tree = tx.CreateTree("foo");
+                for (int i = 0; i < 300; i++)
 				{
-					tx.Root.Add			("items/" + i, new MemoryStream(buffer));
+					tree.Add			("items/" + i, new MemoryStream(buffer));
 				}
 
 				tx.Commit();
@@ -91,11 +94,12 @@ namespace Voron.Tests.Backups
 
 			BackupMethods.Incremental.ToFile(Env, IncrementalBackupTestUtils.IncrementalBackupFile(0));
 
-			using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+			using (var tx = Env.WriteTransaction())
 			{
-				for (int i = 300; i < 600; i++)
+                var tree = tx.CreateTree("foo");
+                for (int i = 300; i < 600; i++)
 				{
-					tx.Root.Add			("items/" + i, new MemoryStream(buffer));
+					tree.Add			("items/" + i, new MemoryStream(buffer));
 				}
 
 				tx.Commit();
@@ -103,11 +107,12 @@ namespace Voron.Tests.Backups
 
 			BackupMethods.Incremental.ToFile(Env, IncrementalBackupTestUtils.IncrementalBackupFile(1));
 
-			using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+			using (var tx = Env.WriteTransaction())
 			{
-				for (int i = 600; i < 1000; i++)
+                var tree = tx.CreateTree("foo");
+                for (int i = 600; i < 1000; i++)
 				{
-					tx.Root.Add			("items/" + i, new MemoryStream(buffer));
+					tree.Add			("items/" + i, new MemoryStream(buffer));
 				}
 
 				tx.Commit();
@@ -129,11 +134,12 @@ namespace Voron.Tests.Backups
 
 			using (var env = new StorageEnvironment(options))
 			{
-				using (var tx = env.NewTransaction(TransactionFlags.Read))
+				using (var tx = env.ReadTransaction())
 				{
-					for (int i = 0; i < 1000; i++)
+                    var tree = tx.CreateTree("foo");
+                    for (int i = 0; i < 1000; i++)
 					{
-						var readResult = tx.Root.Read("items/" + i);
+						var readResult = tree.Read("items/" + i);
 						Assert.NotNull(readResult);
 						var memoryStream = new MemoryStream();
 						readResult.Reader.CopyTo(memoryStream);
@@ -151,11 +157,12 @@ namespace Voron.Tests.Backups
 			var buffer = new byte[100];
 			random.NextBytes(buffer);
 
-			using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+			using (var tx = Env.WriteTransaction())
 			{
-				for (int i = 0; i < 5; i++)
+                var tree = tx.CreateTree("foo");
+                for (int i = 0; i < 5; i++)
 				{
-					tx.Root.Add			("items/" + i, new MemoryStream(buffer));
+					tree.Add			("items/" + i, new MemoryStream(buffer));
 				}
 
 				tx.Commit();
@@ -169,11 +176,12 @@ namespace Voron.Tests.Backups
 
 			var writePos = Env.Journal.CurrentFile.WritePagePosition;
 		
-			using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+			using (var tx = Env.WriteTransaction())
 			{
-				for (int i = 5; i < 10; i++)
+                var tree = tx.CreateTree("foo");
+                for (int i = 5; i < 10; i++)
 				{
-					tx.Root.Add			("items/" + i, new MemoryStream(buffer));
+					tree.Add			("items/" + i, new MemoryStream(buffer));
 				}
 
 				tx.Commit();
@@ -196,11 +204,12 @@ namespace Voron.Tests.Backups
 
 			using (var env = new StorageEnvironment(options))
 			{
-				using (var tx = env.NewTransaction(TransactionFlags.Read))
+				using (var tx = env.ReadTransaction())
 				{
-					for (int i = 0; i < 10; i++)
+                    var tree = tx.CreateTree("foo");
+                    for (int i = 0; i < 10; i++)
 					{
-						var readResult = tx.Root.Read("items/" + i);
+						var readResult = tree.Read("items/" + i);
 						Assert.NotNull(readResult);
 						var memoryStream = new MemoryStream();
 						readResult.Reader.CopyTo(memoryStream);
@@ -218,11 +227,12 @@ namespace Voron.Tests.Backups
             var buffer = new byte[100];
             random.NextBytes(buffer);
 
-            using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+            using (var tx = Env.WriteTransaction())
             {
+                var tree = tx.CreateTree("foo");
                 for (int i = 0; i < 5; i++)
                 {
-                    tx.Root.Add			("items/" + i, new MemoryStream(buffer));
+                    tree.Add			("items/" + i, new MemoryStream(buffer));
                 }
 
                 tx.Commit();
@@ -256,11 +266,12 @@ namespace Voron.Tests.Backups
 
             using (var env = new StorageEnvironment(options))
             {
-                using (var tx = env.NewTransaction(TransactionFlags.Read))
+                using (var tx = env.ReadTransaction())
                 {
+                    var tree = tx.CreateTree("foo");
                     for (int i = 0; i < 5; i++)
                     {
-                        var readResult = tx.Root.Read("items/" + i);
+                        var readResult = tree.Read("items/" + i);
                         Assert.NotNull(readResult);
                         var memoryStream = new MemoryStream();
                         readResult.Reader.CopyTo(memoryStream);
@@ -281,9 +292,9 @@ namespace Voron.Tests.Backups
 			new Random(1).NextBytes(overflowValue);
 
 
-			using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+			using (var tx = Env.WriteTransaction())
 			{
-				var tree = Env.CreateTree(tx, "test");
+				var tree = tx.CreateTree( "test");
 
 				var itemBytes = new byte[16000];
 
@@ -313,7 +324,7 @@ namespace Voron.Tests.Backups
 
 			using (var env = new StorageEnvironment(options))
 			{
-				using (var tx = env.NewTransaction(TransactionFlags.Read))
+				using (var tx = env.ReadTransaction())
 				{
 					var tree = tx.ReadTree("test");
 
@@ -339,9 +350,9 @@ namespace Voron.Tests.Backups
 			new Random(1).NextBytes(overflowValue);
 
 
-			using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+			using (var tx = Env.WriteTransaction())
 			{
-				var tree = Env.CreateTree(tx, "test");
+				var tree = tx.CreateTree( "test");
 
 				var itemBytes = new byte[2000];
 
@@ -356,9 +367,9 @@ namespace Voron.Tests.Backups
 				tx.Commit();
 			}
 
-			using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+			using (var tx = Env.WriteTransaction())
 			{
-				var tree = Env.CreateTree(tx, "test");
+				var tree = tx.CreateTree( "test");
 				tree.Delete("items/1");
 				tree.Delete("items/2");
 
@@ -379,7 +390,7 @@ namespace Voron.Tests.Backups
 
 			using (var env = new StorageEnvironment(options))
 			{
-				using (var tx = env.NewTransaction(TransactionFlags.Read))
+				using (var tx = env.ReadTransaction())
 				{
 					var tree = tx.ReadTree("test");
 
@@ -404,9 +415,9 @@ namespace Voron.Tests.Backups
 			var overflowValue = new byte[testedOverflowSize];
 			new Random(1).NextBytes(overflowValue);
 
-			using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+			using (var tx = Env.WriteTransaction())
 			{
-				var tree = Env.CreateTree(tx, "test");
+				var tree = tx.CreateTree(  "test");
 
 				var itemBytes = new byte[30000];
 
@@ -421,7 +432,7 @@ namespace Voron.Tests.Backups
 				tx.Commit();
 			}
 
-			using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+			using (var tx = Env.WriteTransaction())
 			{
 				var tree = tx.ReadTree("test");
 
@@ -444,7 +455,7 @@ namespace Voron.Tests.Backups
 
 			using (var env = new StorageEnvironment(options))
 			{
-				using (var tx = env.NewTransaction(TransactionFlags.Read))
+				using (var tx = env.ReadTransaction())
 				{
 					var tree = tx.ReadTree("test");
 

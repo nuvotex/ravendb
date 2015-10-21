@@ -42,9 +42,9 @@ namespace Voron.Tests.Backups
 				int index = 0;
 				for (int xi = 0; xi < 10; xi++)
 				{
-					using (var tx = envToSnapshot.NewTransaction(TransactionFlags.ReadWrite))
+					using (var tx = envToSnapshot.WriteTransaction())
 					{
-						var tree = envToSnapshot.CreateTree(tx, "test");
+						var tree = tx.CreateTree("test");
 
 						for (int i = 0; i < UserCount / 10; i++)
 						{
@@ -67,7 +67,7 @@ namespace Voron.Tests.Backups
 
 			using (var snapshotRestoreEnv = new StorageEnvironment(restoredOptions))
 			{
-				using (var tx = snapshotRestoreEnv.NewTransaction(TransactionFlags.Read))
+				using (var tx = snapshotRestoreEnv.ReadTransaction())
 				{
 					var tree = tx.ReadTree("test");
 					Assert.NotNull(tree);
@@ -90,9 +90,9 @@ namespace Voron.Tests.Backups
 			storageEnvironmentOptions.IncrementalBackupEnabled = true;
 			using (var envToSnapshot = new StorageEnvironment(storageEnvironmentOptions))
 			{
-				using (var tx = envToSnapshot.NewTransaction(TransactionFlags.ReadWrite))
+				using (var tx = envToSnapshot.WriteTransaction())
 				{
-					var tree = envToSnapshot.CreateTree(tx, "test");
+					var tree = tx.CreateTree("test");
 
 					for (int i = 0; i < 1000; i++)
 					{
@@ -104,9 +104,9 @@ namespace Voron.Tests.Backups
 
 				new FullBackup().ToFile(envToSnapshot, Path.Combine(_tempDir, "full.backup"));
 
-				using (var tx = envToSnapshot.NewTransaction(TransactionFlags.ReadWrite))
+				using (var tx = envToSnapshot.WriteTransaction())
 				{
-					var tree = envToSnapshot.CreateTree(tx, "test");
+					var tree = tx.CreateTree( "test");
 
 					for (int i = 0; i < 500; i++)
 					{
@@ -130,7 +130,7 @@ namespace Voron.Tests.Backups
 
 			using (var snapshotRestoreEnv = new StorageEnvironment(restoredOptions))
 			{
-				using (var tx = snapshotRestoreEnv.NewTransaction(TransactionFlags.Read))
+				using (var tx = snapshotRestoreEnv.ReadTransaction())
 				{
 					var tree = tx.ReadTree("test");
 					Assert.NotNull(tree);
@@ -172,9 +172,9 @@ namespace Voron.Tests.Backups
 				{
 					for (int yi = 0; yi < 2; yi++)
 					{
-						using (var tx = envToSnapshot.NewTransaction(TransactionFlags.ReadWrite))
+						using (var tx = envToSnapshot.WriteTransaction())
 						{
-							var tree = envToSnapshot.CreateTree(tx, "test");
+							var tree = tx.CreateTree( "test");
 
 							for (int i = 0; i < UserCount / 10; i++)
 							{
@@ -197,7 +197,7 @@ namespace Voron.Tests.Backups
 
 			using (var snapshotRestoreEnv = new StorageEnvironment(restoredOptions))
 			{
-				using (var tx = snapshotRestoreEnv.NewTransaction(TransactionFlags.Read))
+				using (var tx = snapshotRestoreEnv.ReadTransaction())
 				{
 					var tree = tx.ReadTree("test");
 					Assert.NotNull(tree);
@@ -223,9 +223,9 @@ namespace Voron.Tests.Backups
 			{
 				for (int xi = 0; xi < 10; xi++)
 				{
-					using (var tx = envToSnapshot.NewTransaction(TransactionFlags.ReadWrite))
+					using (var tx = envToSnapshot.WriteTransaction())
 					{
-						var tree = envToSnapshot.CreateTree(tx, "test");
+						var tree = tx.CreateTree( "test");
 
 						for (int i = 0; i < UserCount / 10; i++)
 						{
@@ -267,9 +267,9 @@ namespace Voron.Tests.Backups
 			{
 				for (int xi = 0; xi < 100; xi++)
 				{
-					using (var tx = envToSnapshot.NewTransaction(TransactionFlags.ReadWrite))
+					using (var tx = envToSnapshot.WriteTransaction())
 					{
-						var tree = envToSnapshot.CreateTree(tx, "test");
+						var tree = tx.CreateTree("test");
 
 						for (int i = 0; i < 1000; i++)
 						{
@@ -300,18 +300,18 @@ namespace Voron.Tests.Backups
 			storageEnvironmentOptions.IncrementalBackupEnabled = true;
 			using (var envToSnapshot = new StorageEnvironment(storageEnvironmentOptions))
 			{
-				using (var tx = envToSnapshot.NewTransaction(TransactionFlags.ReadWrite))
+				using (var tx = envToSnapshot.WriteTransaction())
 				{
-					var tree = envToSnapshot.CreateTree(tx, "test");
+					var tree = tx.CreateTree("test");
 					tree.Add("users/1", "john doe");
 					tree.Add("users/2", new String('a', 5000));
 
 					tx.Commit();
 				}
 
-				using (var tx = envToSnapshot.NewTransaction(TransactionFlags.ReadWrite))
+				using (var tx = envToSnapshot.WriteTransaction())
 				{
-					var tree = envToSnapshot.CreateTree(tx, "test");
+					var tree = tx.CreateTree("test");
 					tree.Add("users/2", "jane darling");
 					tree.Add("users/3", new String('b', 5000));
 
@@ -326,7 +326,7 @@ namespace Voron.Tests.Backups
 
 				using (var snapshotRestoreEnv = new StorageEnvironment(restoredOptions))
 				{
-					using (var tx = snapshotRestoreEnv.NewTransaction(TransactionFlags.Read))
+					using (var tx = snapshotRestoreEnv.ReadTransaction())
 					{
 						var tree = tx.ReadTree("test");
 						Assert.NotNull(tree);

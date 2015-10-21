@@ -35,9 +35,10 @@ namespace Voron.Tests.Backups
 
 			for (int i = 0; i < 300; i++)
 			{
-				using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+				using (var tx = Env.WriteTransaction())
 				{
-					tx.Root.Add			("items/" + i, new MemoryStream(buffer));
+                    var tree = tx.CreateTree("foo");
+                    tree.Add("items/" + i, new MemoryStream(buffer));
 					tx.Commit();
 				}
 			}

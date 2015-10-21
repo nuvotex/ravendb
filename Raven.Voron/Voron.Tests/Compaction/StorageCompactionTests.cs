@@ -46,12 +46,12 @@ namespace Voron.Tests.Compaction
 			{
 				for (int i = 0; i < treeCount; i++)
 				{
-					using (var tx = env.NewTransaction(TransactionFlags.ReadWrite))
+					using (var tx = env.WriteTransaction())
 					{
 						string name = "tree/" + i;
 						treeNames.Add(name);
 
-						var tree = env.CreateTree(tx, name);
+						var tree = tx.CreateTree( name);
 
 						for (int j = 0; j < recordCount; j++)
 						{
@@ -64,12 +64,12 @@ namespace Voron.Tests.Compaction
 
 				for (int i = 0; i < multiValueTreeCount; i++)
 				{
-					using (var tx = env.NewTransaction(TransactionFlags.ReadWrite))
+					using (var tx = env.WriteTransaction())
 					{
 						var name = "multiValueTree/" + i;
 						multiValueTreeNames.Add(name);
 
-						var tree = env.CreateTree(tx, name);
+						var tree = tx.CreateTree(  name);
 
 						for (int j = 0; j < multiValueRecordsCount; j++)
 						{
@@ -88,11 +88,11 @@ namespace Voron.Tests.Compaction
 
 			using (var compacted = new StorageEnvironment(StorageEnvironmentOptions.ForPath(CompactedData)))
 			{
-				using (var tx = compacted.NewTransaction(TransactionFlags.Read))
+				using (var tx = compacted.ReadTransaction())
 				{
 					foreach (var treeName in treeNames)
 					{
-						var tree = compacted.CreateTree(tx, treeName);
+						var tree = tx.CreateTree( treeName);
 
 						for (int i = 0; i < recordCount; i++)
 						{
@@ -119,7 +119,7 @@ namespace Voron.Tests.Compaction
 
 					foreach (var treeName in multiValueTreeNames)
 					{
-						var tree = compacted.CreateTree(tx, treeName);
+						var tree = tx.CreateTree( treeName);
 
 						for (int i = 0; i < multiValueRecordsCount; i++)
 						{
@@ -147,9 +147,9 @@ namespace Voron.Tests.Compaction
 			var r = new Random();
 			using (var env = new StorageEnvironment(StorageEnvironmentOptions.ForPath(CompactionTestsData)))
 			{
-				using (var tx = env.NewTransaction(TransactionFlags.ReadWrite))
+				using (var tx = env.WriteTransaction())
 				{
-					var tree = env.CreateTree(tx, "records");
+					var tree = tx.CreateTree(  "records");
 
 					for (int i = 0; i < 100; i++)
 					{
@@ -162,9 +162,9 @@ namespace Voron.Tests.Compaction
 					tx.Commit();
 				}
 
-				using (var tx = env.NewTransaction(TransactionFlags.ReadWrite))
+				using (var tx = env.WriteTransaction())
 				{
-					var tree = env.CreateTree(tx, "records");
+					var tree = tx.CreateTree( "records");
 
 					for (int i = 0; i < 50; i++)
 					{
@@ -191,9 +191,9 @@ namespace Voron.Tests.Compaction
 			envOptions.IncrementalBackupEnabled = true;
 			using (var env = new StorageEnvironment(envOptions))
 			{
-				using (var tx = env.NewTransaction(TransactionFlags.ReadWrite))
+				using (var tx = env.WriteTransaction())
 				{
-					var tree = env.CreateTree(tx, "records");
+					var tree = tx.CreateTree( "records");
 
 					tree.Add("record/1", new byte[9]);
 					tree.Add("record/2", new byte[9]);
@@ -215,9 +215,9 @@ namespace Voron.Tests.Compaction
 		{
 			using (var env = new StorageEnvironment(StorageEnvironmentOptions.ForPath(CompactionTestsData)))
 			{
-				using (var tx = env.NewTransaction(TransactionFlags.ReadWrite))
+				using (var tx = env.WriteTransaction())
 				{
-					var tree = env.CreateTree(tx, "fruits");
+					var tree = tx.CreateTree( "fruits");
 
 					tree.Add("apple", new byte[123]);
 					tree.Add("orange", new byte[99]);
@@ -238,9 +238,9 @@ namespace Voron.Tests.Compaction
 
 			using (var compacted = new StorageEnvironment(StorageEnvironmentOptions.ForPath(CompactedData)))
 			{
-				using (var tx = compacted.NewTransaction(TransactionFlags.ReadWrite))
+				using (var tx = compacted.WriteTransaction())
 				{
-					var tree = compacted.CreateTree(tx, "fruits");
+					var tree = tx.CreateTree( "fruits");
 
 					tree.Add("peach", new byte[144]);
 				}
@@ -252,19 +252,19 @@ namespace Voron.Tests.Compaction
 		{
 			using (var env = new StorageEnvironment(StorageEnvironmentOptions.ForPath(CompactionTestsData)))
 			{
-				using (var tx = env.NewTransaction(TransactionFlags.ReadWrite))
+				using (var tx = env.WriteTransaction())
 				{
-					var tree = env.CreateTree(tx, "fruits");
+					var tree = tx.CreateTree( "fruits");
 
 					tree.Add("apple", new byte[123]);
 					tree.Add("orange", new byte[99]);
 
-					var tree2 = env.CreateTree(tx, "vegetables");
+					var tree2 = tx.CreateTree( "vegetables");
 
 					tree2.Add("carrot", new byte[123]);
 					tree2.Add("potato", new byte[99]);
 
-					var tree3 = env.CreateTree(tx, "multi");
+					var tree3 = tx.CreateTree(  "multi");
 
 					tree3.MultiAdd("fruits", "apple");
 					tree3.MultiAdd("fruits", "orange");

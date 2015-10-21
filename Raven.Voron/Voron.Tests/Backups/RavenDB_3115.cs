@@ -36,16 +36,16 @@ namespace Voron.Tests.Backups
 
 			using (var env = new StorageEnvironment(ModifyOptions(StorageEnvironmentOptions.ForPath("Data"))))
 			{
-				using (var tx = env.NewTransaction(TransactionFlags.ReadWrite))
+				using (var tx = env.WriteTransaction())
 				{
-					env.CreateTree(tx, "items");
+					tx.CreateTree(  "items");
 
 					tx.Commit();
 				}
 
 				for (int j = 0; j < 100; j++)
 				{
-					using (var tx = env.NewTransaction(TransactionFlags.ReadWrite))
+					using (var tx = env.WriteTransaction())
 					{
 						var tree = tx.ReadTree("items");
 

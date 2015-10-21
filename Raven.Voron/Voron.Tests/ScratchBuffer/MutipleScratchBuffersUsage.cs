@@ -26,9 +26,9 @@ namespace Voron.Tests.ScratchBuffer
 
 			var size = 0;
 
-			using (var txw = Env.NewTransaction(TransactionFlags.ReadWrite))
+			using (var txw = Env.WriteTransaction())
 			{
-			    Env.CreateTree(txw, "foo");
+			    txw.CreateTree( "foo");
 
 				txw.Commit();
 			}
@@ -39,9 +39,9 @@ namespace Voron.Tests.ScratchBuffer
 		    int i = 0;
 			while (size < 256 * Env.Options.PageSize) 
 			{
-				using (Env.NewTransaction(TransactionFlags.Read))
+				using (Env.ReadTransaction())
 				{
-					using (var txw = Env.NewTransaction(TransactionFlags.ReadWrite))
+					using (var txw = Env.WriteTransaction())
 					{
 						var tree = txw.ReadTree("foo");
 
@@ -64,9 +64,9 @@ namespace Voron.Tests.ScratchBuffer
 
 			var size = 0;
 
-			using (var txw = Env.NewTransaction(TransactionFlags.ReadWrite))
+			using (var txw = Env.WriteTransaction())
 			{
-				Env.CreateTree(txw, "foo");
+				txw.CreateTree("foo");
 
 				txw.Commit();
 			}
@@ -77,9 +77,9 @@ namespace Voron.Tests.ScratchBuffer
 
 			while (size < 1024 * Env.Options.PageSize)
 			{
-				using (var txr = Env.NewTransaction(TransactionFlags.Read))
+				using (var txr = Env.ReadTransaction())
 				{
-					using (var txw = Env.NewTransaction(TransactionFlags.ReadWrite))
+					using (var txw = Env.WriteTransaction())
 					{
 						var tree = txw.ReadTree("foo");
 
