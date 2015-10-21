@@ -21,7 +21,7 @@ namespace Voron.Tests.Storage
 		[Fact]
 		public void AllocatedSpaceOfDataFileEqualsToSumOfSpaceInUseAndFreeSpace()
 		{
-			using (var tx = Env.NewTransaction(TransactionFlags.Read))
+			using (var tx = Env.ReadTransaction())
 			{
 				var report = Env.GenerateReport(tx);
 
@@ -39,11 +39,11 @@ namespace Voron.Tests.Storage
 			var numberOfOverflowPages = new Dictionary<string, long>();
 			var numberOfEntries = new Dictionary<string, long>();
 
-			using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+			using (var tx = Env.WriteTransaction())
 			{
 				for (int i = 0; i < numberOfTrees; i++)
 				{
-					var tree = Env.CreateTree(tx, "tree_" + i);
+					var tree = tx.CreateTree("tree_" + i);
 
 					var entries = AddEntries(tree, i).Count;
 					var overflows = AddOverflows(tx, tree, i, r);
@@ -55,7 +55,7 @@ namespace Voron.Tests.Storage
 				tx.Commit();
 			}
 
-			using (var tx = Env.NewTransaction(TransactionFlags.Read))
+			using (var tx = Env.ReadTransaction())
 			{
 				var report = Env.GenerateReport(tx, computeExactSizes:true);
 
@@ -84,13 +84,13 @@ namespace Voron.Tests.Storage
 		{
 			var addedEntries = new Dictionary<string, List<string>>();
 
-			using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+			using (var tx = Env.WriteTransaction())
 			{
 				var r = new Random();
 
 				for (int i = 0; i < numberOfTrees; i++)
 				{
-					var tree = Env.CreateTree(tx, "tree_" + i);
+					var tree = tx.CreateTree("tree_" + i);
 
 					var entries = AddEntries(tree, i);
 					var overflows = AddOverflows(tx, tree, i, r);
@@ -101,7 +101,7 @@ namespace Voron.Tests.Storage
 				tx.Commit();
 			}
 
-			using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+			using (var tx = Env.WriteTransaction())
 			{
 				foreach (var entries in addedEntries)
 				{
@@ -116,7 +116,7 @@ namespace Voron.Tests.Storage
 				tx.Commit();
 			}
 
-			using (var tx = Env.NewTransaction(TransactionFlags.Read))
+			using (var tx = Env.ReadTransaction())
 			{
                 var report = Env.GenerateReport(tx, computeExactSizes: true);
 
@@ -152,11 +152,11 @@ namespace Voron.Tests.Storage
 		[InlineData(14)]
 		public void JournalReportsArePresent(int numberOfTrees)
 		{
-			using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+			using (var tx = Env.WriteTransaction())
 			{
 				for (int i = 0; i < numberOfTrees; i++)
 				{
-					var tree = Env.CreateTree(tx, "tree_" + i);
+					var tree = tx.CreateTree( "tree_" + i);
 
 					AddEntries(tree, i);
 				}
@@ -164,7 +164,7 @@ namespace Voron.Tests.Storage
 				tx.Commit();
 			}
 
-			using (var tx = Env.NewTransaction(TransactionFlags.Read))
+			using (var tx = Env.ReadTransaction())
 			{
 				var report = Env.GenerateReport(tx);
 
@@ -184,9 +184,9 @@ namespace Voron.Tests.Storage
 		[InlineData(15)]
 		public void TreeReportContainsInfoAboutPagesUsedByFixedSizeTrees(int numberOfFixedSizeTrees)
 		{
-			using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+			using (var tx = Env.WriteTransaction())
 			{
-				var tree = Env.CreateTree(tx, "fixed-size-trees");
+				var tree = tx.CreateTree("fixed-size-trees");
 
 				for (int treeNumber = 0; treeNumber < numberOfFixedSizeTrees; treeNumber++)
 				{
@@ -207,7 +207,7 @@ namespace Voron.Tests.Storage
 				tx.Commit();
 			}
 
-			using (var tx = Env.NewTransaction(TransactionFlags.Read))
+			using (var tx = Env.ReadTransaction())
 			{
                 var report = Env.GenerateReport(tx, computeExactSizes: true);
 
@@ -232,9 +232,9 @@ namespace Voron.Tests.Storage
 		[InlineData(new[] { "key1", "key2" }, 30)]
 		public void TreeReportContainsInformationAboutMultiValueEntries(string[] keys, int numberOfValuesPerKey)
 		{
-			using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+			using (var tx = Env.WriteTransaction())
 			{
-				var tree = Env.CreateTree(tx, "multi-tree");
+				var tree = tx.CreateTree( "multi-tree");
 
 				foreach (var key in keys)
 				{
@@ -247,7 +247,7 @@ namespace Voron.Tests.Storage
 				tx.Commit();
 			}
 
-			using (var tx = Env.NewTransaction(TransactionFlags.Read))
+			using (var tx = Env.ReadTransaction())
 			{
 				var report = Env.GenerateReport(tx, computeExactSizes: true);
 
@@ -260,9 +260,9 @@ namespace Voron.Tests.Storage
 		[Fact]
 		public void TreeReportContainsInformationAboutPagesOfChildMultiTrees()
 		{
-			using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+			using (var tx = Env.WriteTransaction())
 			{
-				var tree = Env.CreateTree(tx, "multi-tree");
+				var tree = tx.CreateTree("multi-tree");
 
 				for (int i = 0; i < 1000; i++)
 				{
@@ -272,7 +272,7 @@ namespace Voron.Tests.Storage
 				tx.Commit();
 			}
 
-			using (var tx = Env.NewTransaction(TransactionFlags.Read))
+			using (var tx = Env.ReadTransaction())
 			{
 				var report = Env.GenerateReport(tx, computeExactSizes: true);
 
@@ -280,7 +280,7 @@ namespace Voron.Tests.Storage
                 Assert.Equal(report.Trees[0].MultiValues.PageCount, report.Trees[0].MultiValues.LeafPages + report.Trees[0].MultiValues.BranchPages + report.Trees[0].MultiValues.OverflowPages);
 			}
 
-			using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+			using (var tx = Env.WriteTransaction())
 			{
 				var tree = tx.ReadTree("multi-tree");
 
@@ -292,7 +292,7 @@ namespace Voron.Tests.Storage
 				tx.Commit();
 			}
 
-			using (var tx = Env.NewTransaction(TransactionFlags.Read))
+			using (var tx = Env.ReadTransaction())
 			{
 				var report = Env.GenerateReport(tx, computeExactSizes: true);
 
@@ -323,7 +323,7 @@ namespace Voron.Tests.Storage
 
 		private OverflowsAddResult AddOverflows(Transaction tx, Tree tree, int treeNumber, Random r)
 		{
-			var minOverflowSize = tx.DataPager.NodeMaxSize - Constants.PageHeaderSize + 1;
+			var minOverflowSize = tx.LowLevelTransaction.DataPager.NodeMaxSize - Constants.PageHeaderSize + 1;
 			var entriesAdded = new List<string>();
 			var overflowsAdded = 0;
 
@@ -334,7 +334,7 @@ namespace Voron.Tests.Storage
 				tree.Add(key, new MemoryStream(new byte[overflowSize]));
 
 				entriesAdded.Add(key);
-				overflowsAdded += tx.DataPager.GetNumberOfOverflowPages(overflowSize);
+				overflowsAdded += tx.LowLevelTransaction.DataPager.GetNumberOfOverflowPages(overflowSize);
 			}
 
 			return new OverflowsAddResult

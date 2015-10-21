@@ -10,29 +10,30 @@ using Xunit;
 
 namespace Voron.Tests.Storage
 {
-	public class Quotas : StorageTest
-	{
-		protected override void Configure(StorageEnvironmentOptions options)
-		{
-			options.MaxStorageSize = 1024 * 1024 * 1; // 1MB
-		}
+    public class Quotas : StorageTest
+    {
+        protected override void Configure(StorageEnvironmentOptions options)
+        {
+            options.MaxStorageSize = 1024 * 1024 * 1; // 1MB
+        }
 
-		[Fact]
-		public void ShouldThrowQuotaException()
-		{
-			var quotaEx = Assert.Throws<QuotaException>(() =>
-			{
-				// everything in one transaction
-				using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
-				{
-					for (int i = 0; i < 1024; i++)
-					{
-						tx.Root.Add			("items/" + i, new MemoryStream(new byte[1024]));
-					}
+        [Fact]
+        public void ShouldThrowQuotaException()
+        {
+            var quotaEx = Assert.Throws<QuotaException>(() =>
+            {
+                // everything in one transaction
+                using (var tx = Env.WriteTransaction())
+                {
+                    var tree = tx.CreateTree("foo");
+                    for (int i = 0; i < 1024; i++)
+                    {
+                        tree.Add("items/" + i, new MemoryStream(new byte[1024]));
+                    }
 
-					tx.Commit();
-				}
-			});
-		}
-	}
+                    tx.Commit();
+                }
+            });
+        }
+    }
 }

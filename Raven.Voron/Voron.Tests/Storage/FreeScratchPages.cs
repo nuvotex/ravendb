@@ -13,54 +13,56 @@ using Xunit;
 
 namespace Voron.Tests.Storage
 {
-	public class FreeScratchPages : StorageTest
-	{
-		[Fact]
-		public void UncommittedTransactionShouldFreeScratchPagesThatWillBeReusedByNextTransaction()
-		{
-			var random = new Random();
-			var buffer = new byte[1024];
-			random.NextBytes(buffer);
+    public class FreeScratchPages : StorageTest
+    {
+        [Fact]
+        public void UncommittedTransactionShouldFreeScratchPagesThatWillBeReusedByNextTransaction()
+        {
+            var random = new Random();
+            var buffer = new byte[1024];
+            random.NextBytes(buffer);
 
             HashSet<PageFromScratchBuffer> scratchPagesOfUncommittedTransaction = new HashSet<PageFromScratchBuffer>();
 
-			using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
-			{
-				for (int i = 0; i < 10; i++)
-				{
-					tx.Root.Add			("items/" + i, new MemoryStream(buffer));
-				}
+            using (var tx = Env.WriteTransaction())
+            {
+                 var tree = tx.CreateTree("foo");
+               for (int i = 0; i < 10; i++)
+                {
+                    tree.Add("items/" + i, new MemoryStream(buffer));
+                }
 
                 // For optimization purposes the used scratch pages now do not include the transaction header, therefore we need to include it.
-                scratchPagesOfUncommittedTransaction = new HashSet<PageFromScratchBuffer>(tx.GetTransactionPages());
-                scratchPagesOfUncommittedTransaction.Add(tx.GetTransactionHeaderPage());
+                scratchPagesOfUncommittedTransaction = new HashSet<PageFromScratchBuffer>(tx.LowLevelTransaction.GetTransactionPages());
+                scratchPagesOfUncommittedTransaction.Add(tx.LowLevelTransaction.GetTransactionHeaderPage());
 
-				// tx.Commit() - intentionally not committing
-			}
+                // tx.Commit() - intentionally not committing
+            }
 
-			HashSet<PageFromScratchBuffer> scratchPagesOfCommittedTransaction = new HashSet<PageFromScratchBuffer>();
+            HashSet<PageFromScratchBuffer> scratchPagesOfCommittedTransaction = new HashSet<PageFromScratchBuffer>();
 
-			using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
-			{
-				// let's do exactly the same, it should reuse the same scratch pages
-				for (int i = 0; i < 10; i++)
-				{
-					tx.Root.Add			("items/" + i, new MemoryStream(buffer));
-				}
+            using (var tx = Env.WriteTransaction())
+            {
+                var tree = tx.CreateTree("foo");
+                // let's do exactly the same, it should reuse the same scratch pages
+                for (int i = 0; i < 10; i++)
+                {
+                    tree.Add("items/" + i, new MemoryStream(buffer));
+                }
 
                 // For optimization purposes the used scratch pages now do not include the transaction header, therefore we need to include it.
-                scratchPagesOfCommittedTransaction = new HashSet<PageFromScratchBuffer>(tx.GetTransactionPages());
-                scratchPagesOfCommittedTransaction.Add(tx.GetTransactionHeaderPage());
+                scratchPagesOfCommittedTransaction = new HashSet<PageFromScratchBuffer>(tx.LowLevelTransaction.GetTransactionPages());
+                scratchPagesOfCommittedTransaction.Add(tx.LowLevelTransaction.GetTransactionHeaderPage());
 
-				tx.Commit();
-			}
+                tx.Commit();
+            }
 
-			Assert.Equal(scratchPagesOfUncommittedTransaction.Count, scratchPagesOfCommittedTransaction.Count);
+            Assert.Equal(scratchPagesOfUncommittedTransaction.Count, scratchPagesOfCommittedTransaction.Count);
 
-			foreach (var uncommittedPage in scratchPagesOfUncommittedTransaction)
-			{
-				Assert.Contains(uncommittedPage, scratchPagesOfCommittedTransaction);
-			}
-		}
-	}
+            foreach (var uncommittedPage in scratchPagesOfUncommittedTransaction)
+            {
+                Assert.Contains(uncommittedPage, scratchPagesOfCommittedTransaction);
+            }
+        }
+    }
 }

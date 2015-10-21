@@ -23,21 +23,21 @@ namespace Voron.Tests.Storage
 			var buffer = new byte[1024 * 512];
 			random.NextBytes(buffer);
 
-			using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+			using (var tx = Env.WriteTransaction())
 			{
-				Env.CreateTree(tx, "tree");
+				tx.CreateTree("tree");
 				tx.Commit();
 			}
 
-			using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+			using (var tx = Env.WriteTransaction())
 			{
-				tx.Environment.CreateTree(tx,"tree").Add("key1", new MemoryStream(buffer));
+				tx.CreateTree("tree").Add("key1", new MemoryStream(buffer));
 				tx.Commit();
 			}
 
-			using (var tx = Env.NewTransaction(TransactionFlags.Read))
+			using (var tx = Env.ReadTransaction())
 			{
-			    var read = tx.Environment.CreateTree(tx,"tree").Read("key1");
+			    var read = tx.CreateTree("tree").Read("key1");
 			    Assert.NotNull(read);
 
 			    var reader = read.Reader;
@@ -61,15 +61,15 @@ namespace Voron.Tests.Storage
 
 			using (var env = new StorageEnvironment(options))
 			{
-				using (var tx = env.NewTransaction(TransactionFlags.ReadWrite))
+				using (var tx = env.WriteTransaction())
 				{
-					env.CreateTree(tx, "tree");
+					tx.CreateTree("tree");
 					tx.Commit();
 				}
 
-				using (var tx = env.NewTransaction(TransactionFlags.ReadWrite))
+				using (var tx = env.WriteTransaction())
 				{
-					tx.Environment.CreateTree(tx,"tree").Add("key1", new MemoryStream(buffer));
+					tx.CreateTree("tree").Add("key1", new MemoryStream(buffer));
 					tx.Commit();
 				}
 			}
@@ -79,15 +79,15 @@ namespace Voron.Tests.Storage
 
 			using (var env = new StorageEnvironment(options))
 			{
-				using (var tx = env.NewTransaction(TransactionFlags.ReadWrite))
+				using (var tx = env.WriteTransaction())
 				{
-					env.CreateTree(tx, "tree");
+					tx.CreateTree("tree");
 					tx.Commit();
 				}
 
-				using (var tx = env.NewTransaction(TransactionFlags.Read))
+				using (var tx = env.ReadTransaction())
 				{
-					var read = tx.Environment.CreateTree(tx,"tree").Read("key1");
+					var read = tx.CreateTree("tree").Read("key1");
 					Assert.NotNull(read);
 
 					{
