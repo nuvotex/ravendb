@@ -104,9 +104,9 @@ namespace Voron.Tests.Trees
 
 			var structure = new Structure<SchemaFields>(schema);
 
-			using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+			using (var tx = Env.WriteTransaction())
 			{
-				var tree = Env.CreateTree(tx, "stats");
+				var tree = tx.CreateTree( "stats");
 
 				structure.Set(SchemaFields.Message, "hello");
 
@@ -160,9 +160,9 @@ namespace Voron.Tests.Trees
 				.Add<byte>(IndexingStatsFields.IsValid)
 				.Add<long>(IndexingStatsFields.IndexedAt);
 
-			using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+			using (var tx = Env.WriteTransaction())
 			{
-				var tree = Env.CreateTree(tx, "stats");
+				var tree = tx.CreateTree("stats");
 
 				var stats = new Structure<IndexingStatsFields>(schema);
 
@@ -177,7 +177,7 @@ namespace Voron.Tests.Trees
 				tx.Commit();
 			}
 
-			using (var tx = Env.NewTransaction(TransactionFlags.Read))
+			using (var tx = Env.ReadTransaction())
 			{
 				var tree = tx.ReadTree("stats");
 
@@ -199,9 +199,9 @@ namespace Voron.Tests.Trees
 				.Add<int>(IndexingStatsFields.Errors)
 				.Add<int>(IndexingStatsFields.Successes);
 
-			using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+			using (var tx = Env.WriteTransaction())
 			{
-				var tree = Env.CreateTree(tx, "stats");
+				var tree = tx.CreateTree("stats");
 
 				var stats = new Structure<IndexingStatsFields>(schema);
 
@@ -214,7 +214,7 @@ namespace Voron.Tests.Trees
 				tx.Commit();
 			}
 
-			using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+			using (var tx = Env.WriteTransaction())
 			{
 				var tree = tx.ReadTree("stats");
 
@@ -241,33 +241,36 @@ namespace Voron.Tests.Trees
 				.Add<int>(IndexingStatsFields.Successes)
 				.Add<string>(IndexingStatsFields.Message);
 
-			using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+			using (var tx = Env.WriteTransaction())
 			{
-				Env.CreateTree(tx, "stats");
-				Env.CreateTree(tx, "operations");
+				tx.CreateTree("stats");
+				tx.CreateTree("operations");
 
 				tx.Commit();
 			}
-			var batch = new WriteBatch();
+            using (var tx = Env.WriteTransaction())
+            {
+                var stats = tx.CreateTree("stats");
+                stats.WriteStruct("stats/1",
+                    new Structure<IndexingStatsFields>(statsSchema)
+                        .Set(IndexingStatsFields.Attempts, 5)
+                        .Set(IndexingStatsFields.Errors, -1)
+                        .Set(IndexingStatsFields.Successes, 4)
+                        .Set(IndexingStatsFields.Message, "hello world"));
+                var ops = tx.CreateTree("operations");
+                ops.WriteStruct("operations/1", new Structure<IndexingStatsFields>(operationSchema)
+                    .Set(IndexingStatsFields.Attempts, 10)
+                    .Set(IndexingStatsFields.Successes, 10)
+                    .Set(IndexingStatsFields.Message, "hello world"));
 
-			batch.AddStruct("stats/1",
-				new Structure<IndexingStatsFields>(statsSchema)
-				.Set(IndexingStatsFields.Attempts, 5)
-				.Set(IndexingStatsFields.Errors, -1)
-				.Set(IndexingStatsFields.Successes, 4)
-				.Set(IndexingStatsFields.Message, "hello world"),
-				"stats");
+                tx.Commit();
+            }
+		
 
-			batch.AddStruct("operations/1",
-				new Structure<IndexingStatsFields>(operationSchema)
-				.Set(IndexingStatsFields.Attempts, 10)
-				.Set(IndexingStatsFields.Successes, 10)
-				.Set(IndexingStatsFields.Message, "hello world"),
-				"operations");
-
-			using (var snapshot = Env.CreateSnapshot())
+			using (var tx = Env.ReadTransaction())
 			{
-				var stats = snapshot.ReadStruct("stats", "stats/1", statsSchema, batch).Reader;
+			    var statsTree = tx.ReadTree("stats");
+                var stats = statsTree.ReadStruct("stats/1", statsSchema).Reader;
 
 				Assert.Equal(5, stats.ReadInt(IndexingStatsFields.Attempts));
 				Assert.Equal(-1, stats.ReadInt(IndexingStatsFields.Errors));
@@ -275,22 +278,31 @@ namespace Voron.Tests.Trees
 				Assert.Equal("hello world", stats.ReadString(IndexingStatsFields.Message));
 			}
 
-			Env.Writer.Write(batch);
 
-			using (var snapshot = Env.CreateSnapshot())
+			using (var tx = Env.ReadTransaction())
 			{
-				var operation = snapshot.ReadStruct("operations", "operations/1", operationSchema).Reader;
+			    var tree = tx.ReadTree("operations");
+				var operation = tree.ReadStruct("operations/1", operationSchema).Reader;
 
 				Assert.Equal(10, operation.ReadInt(IndexingStatsFields.Attempts));
 				Assert.Equal(10, operation.ReadInt(IndexingStatsFields.Successes));
 				Assert.Equal("hello world", operation.ReadString(IndexingStatsFields.Message));
 			}
 
-			batch.Delete("stats/1", "stats");
 
-			using (var snapshot = Env.CreateSnapshot())
+            using (var tx = Env.WriteTransaction())
+            {
+                var stats = tx.CreateTree("stats");
+                stats.Delete("stats/1");
+
+                tx.Commit();
+            }
+
+
+			using (var tx = Env.ReadTransaction())
 			{
-				var stats = snapshot.ReadStruct("stats", "stats/1", statsSchema, batch);
+                var statsTree = tx.ReadTree("stats");
+                var stats = statsTree.ReadStruct("stats/1", statsSchema);
 
 				Assert.Null(stats);
 			}
@@ -303,9 +315,9 @@ namespace Voron.Tests.Trees
 				.Add<int>(IndexingStatsFields.Attempts)
 				.Add<string>(IndexingStatsFields.Message);
 
-			using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+			using (var tx = Env.WriteTransaction())
 			{
-				var tree = Env.CreateTree(tx, "stats");
+				var tree = tx.CreateTree("stats");
 
 				tree.WriteStruct("items/1", new Structure<IndexingStatsFields>(statsSchema)
 					.Set(IndexingStatsFields.Attempts, 1)
@@ -323,7 +335,7 @@ namespace Voron.Tests.Trees
 				tx.Commit();
 			}
 
-			using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+			using (var tx = Env.WriteTransaction())
 			{
 				var iterator = tx.ReadTree("stats").Iterate();
 
@@ -364,9 +376,9 @@ namespace Voron.Tests.Trees
 				.Add<string>(MappedResults.ReduceKey);
 
 
-			using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+			using (var tx = Env.WriteTransaction())
 			{
-				var tree = Env.CreateTree(tx, "stats");
+				var tree = tx.CreateTree( "stats");
 
 				tree.WriteStruct("items/1", 
 					new Structure<Enum>(schema)
@@ -376,7 +388,7 @@ namespace Voron.Tests.Trees
 				tx.Commit();
 			}
 
-			using (var tx = Env.NewTransaction(TransactionFlags.Read))
+			using (var tx = Env.ReadTransaction())
 			{
 				var readTree = tx.ReadTree("stats");
 
@@ -402,9 +414,9 @@ namespace Voron.Tests.Trees
 
 			var structure = new Structure<HelloWorld>(schema);
 
-			using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+			using (var tx = Env.WriteTransaction())
 			{
-				var tree = Env.CreateTree(tx, "stats");
+				var tree = tx.CreateTree("stats");
 
 				structure.Set(HelloWorld.World, "W0rld!"); // set 2nd value first
 				structure.Set(HelloWorld.Hello, "Hell0"); // set 1st value in second operation
@@ -436,9 +448,9 @@ namespace Voron.Tests.Trees
 				.Add<byte[]>(MappedResults.Etag);
 
 
-			using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+			using (var tx = Env.WriteTransaction())
 			{
-				var tree = Env.CreateTree(tx, "stats");
+				var tree = tx.CreateTree( "stats");
 
 				tree.WriteStruct("items/1",
 					new Structure<MappedResults>(schema)
@@ -452,7 +464,7 @@ namespace Voron.Tests.Trees
 				tx.Commit();
 			}
 
-			using (var tx = Env.NewTransaction(TransactionFlags.Read))
+			using (var tx = Env.ReadTransaction())
 			{
 				var readTree = tx.ReadTree("stats");
 
@@ -502,9 +514,9 @@ namespace Voron.Tests.Trees
 				.Add<decimal>(PrimitiveFields.@decimal)
 				.Add<bool>(PrimitiveFields.@bool);
 
-			using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+			using (var tx = Env.WriteTransaction())
 			{
-				var tree = Env.CreateTree(tx, "primitives");
+				var tree = tx.CreateTree( "primitives");
 
 				tree.WriteStruct("primitives/1",
 					new Structure<PrimitiveFields>(schema)
@@ -597,9 +609,10 @@ namespace Voron.Tests.Trees
 				.Add<string>(MappedResults.ReduceKey)
 				.Add<string>(MappedResults.DocId);
 
-			using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+			using (var tx = Env.WriteTransaction())
 			{
-				tx.Root.WriteStruct("structures/1", new Structure<MappedResults>(schema)
+			    var tree = tx.CreateTree("foo");
+				tree.WriteStruct("structures/1", new Structure<MappedResults>(schema)
 					.Set(MappedResults.View, 1)
 					.Set(MappedResults.ReduceKey, "reduce")
 					.Set(MappedResults.DocId, "doc"));
@@ -607,14 +620,15 @@ namespace Voron.Tests.Trees
 				tx.Commit();
 			}
 
-			using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+			using (var tx = Env.WriteTransaction())
 			{
-				var ex = Assert.Throws<InvalidOperationException>(() => tx.Root.WriteStruct("structures/1", new Structure<MappedResults>(schema)
+                var tree = tx.CreateTree("foo");
+                var ex = Assert.Throws<InvalidOperationException>(() => tree.WriteStruct("structures/1", new Structure<MappedResults>(schema)
 					.Set(MappedResults.View, 2)));
 
 				Assert.Equal("Your structure schema defines variable size fields but you haven't set any. If you really want to skip those fields set AllowToSkipVariableSizeFields = true.", ex.Message);
 
-				Assert.DoesNotThrow(() => tx.Root.WriteStruct("structures/1", new Structure<MappedResults>(schema)
+				Assert.DoesNotThrow(() => tree.WriteStruct("structures/1", new Structure<MappedResults>(schema)
 				{
 					AllowToSkipVariableSizeFields = true
 				}.Set(MappedResults.View, 2)));

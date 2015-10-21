@@ -10,18 +10,18 @@ namespace Voron.Tests.Trees
 		[Fact]
 		public void CanCreateNewTree()
 		{
-			using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+			using (var tx = Env.WriteTransaction())
 			{
-				Env.CreateTree(tx, "test");
+				tx.CreateTree("test");
 
-				Env.CreateTree(tx, "test").Add("test", StreamFor("abc"));
+				tx.CreateTree("test").Add("test", StreamFor("abc"));
 
 				tx.Commit();
 			}
 
-			using (var tx = Env.NewTransaction(TransactionFlags.Read))
+			using (var tx = Env.ReadTransaction())
 			{
-				var stream = tx.Environment.CreateTree(tx,"test").Read("test");
+				var stream = tx.ReadTree("test").Read("test");
 				Assert.NotNull(stream);
 
 				tx.Commit();
@@ -31,26 +31,26 @@ namespace Voron.Tests.Trees
 		[Fact]
 		public void CanUpdateValuesInSubTree()
 		{
-			using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+			using (var tx = Env.WriteTransaction())
 			{
-				Env.CreateTree(tx, "test");
+				tx.CreateTree("test");
 
-				Env.CreateTree(tx, "test").Add("test", StreamFor("abc"));
+				tx.CreateTree("test").Add("test", StreamFor("abc"));
 
 				tx.Commit();
 			}
 
-			using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+			using (var tx = Env.WriteTransaction())
 			{
 
-				tx.Environment.CreateTree(tx,"test").Add("test2", StreamFor("abc"));
+				tx.CreateTree("test").Add("test2", StreamFor("abc"));
 
 				tx.Commit();
 			}
 
-			using (var tx = Env.NewTransaction(TransactionFlags.Read))
+			using (var tx = Env.ReadTransaction())
 			{
-				var stream = tx.Environment.CreateTree(tx,"test").Read("test2");
+				var stream = tx.CreateTree("test").Read("test2");
 				Assert.NotNull(stream);
 
 				tx.Commit();
@@ -60,16 +60,16 @@ namespace Voron.Tests.Trees
 		[Fact]
 		public void CreatingTreeWithoutCommitingTransactionShouldYieldNoResults()
 		{
-			using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+			using (var tx = Env.WriteTransaction())
 			{
-				Env.CreateTree(tx, "test");
+				tx.CreateTree("test");
 			}
 
 			var e = Assert.Throws<InvalidOperationException>(() =>
 			    {
-			        using (var tx = Env.NewTransaction(TransactionFlags.Read))
+			        using (var tx = Env.ReadTransaction())
 			        {
-			            tx.Environment.CreateTree(tx,"test");
+			            tx.CreateTree("test");
 			        }
 			    });
 			Assert.Contains("No such tree: test", e.Message);

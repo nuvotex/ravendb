@@ -14,9 +14,9 @@ namespace Voron.Tests.Trees
 		[Fact]
 		public void CanRenameTree()
 		{
-			using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+			using (var tx = Env.WriteTransaction())
 			{
-				var tree = Env.CreateTree(tx, "tree");
+				var tree = tx.CreateTree("tree");
 
 				tree.Add("items/1", new byte[] { 1, 2, 3 });
 				tree.Add("items/2", new byte[] { 1, 2, 3 });
@@ -25,14 +25,14 @@ namespace Voron.Tests.Trees
 				tx.Commit();
 			}
 
-			using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+			using (var tx = Env.WriteTransaction())
 			{
-				Env.RenameTree(tx, "tree", "renamed_tree");
+				tx.RenameTree( "tree", "renamed_tree");
 
 				tx.Commit();
 			}
 
-			using (var tx = Env.NewTransaction(TransactionFlags.Read))
+			using (var tx = Env.ReadTransaction())
 			{
 				var tree = tx.ReadTree("renamed_tree");
 
@@ -50,12 +50,12 @@ namespace Voron.Tests.Trees
 		[Fact]
 		public void ShouldNotAllowToRenameTreeIfTreeAlreadyExists()
 		{
-			using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+			using (var tx = Env.WriteTransaction())
 			{
-				Env.CreateTree(tx, "tree_1");
-				Env.CreateTree(tx, "tree_2");
+				tx.CreateTree("tree_1");
+				tx.CreateTree("tree_2");
 
-				var ae = Assert.Throws<ArgumentException>(() => Env.RenameTree(tx, "tree_1", "tree_2"));
+				var ae = Assert.Throws<ArgumentException>(() => tx.RenameTree("tree_1", "tree_2"));
 
 				Assert.Equal("Cannot rename a tree with the name of an existing tree: tree_2", ae.Message);
 			}
@@ -64,9 +64,9 @@ namespace Voron.Tests.Trees
 		[Fact]
 		public void ShouldThrowIfTreeDoesNotExist()
 		{
-			using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+			using (var tx = Env.WriteTransaction())
 			{
-				var ae = Assert.Throws<ArgumentException>(() => Env.RenameTree(tx, "tree_1", "tree_2"));
+				var ae = Assert.Throws<ArgumentException>(() => tx.RenameTree( "tree_1", "tree_2"));
 
 				Assert.Equal("Tree tree_1 does not exists", ae.Message);
 			}
@@ -75,22 +75,19 @@ namespace Voron.Tests.Trees
 		[Fact]
 		public void MustNotRenameToRootAndFreeSpaceRootTrees()
 		{
-			using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+			using (var tx = Env.WriteTransaction())
 			{
-				var ex = Assert.Throws<InvalidOperationException>(() => Env.RenameTree(tx, "tree_1", Constants.RootTreeName));
+				var ex = Assert.Throws<InvalidOperationException>(() => tx.RenameTree("tree_1", Constants.RootTreeName));
 				Assert.Equal("Cannot create a tree with reserved name: " + Constants.RootTreeName, ex.Message);
-
-				ex = Assert.Throws<InvalidOperationException>(() => Env.RenameTree(tx, "tree_1", Constants.FreeSpaceTreeName));
-				Assert.Equal("Cannot create a tree with reserved name: " + Constants.FreeSpaceTreeName, ex.Message);
 			}
 		}
 
 		[Fact]
 		public void ShouldPreventFromRenamingTreeInReadTransaction()
 		{
-			using (var tx = Env.NewTransaction(TransactionFlags.Read))
+			using (var tx = Env.ReadTransaction())
 			{
-				var ae = Assert.Throws<ArgumentException>(() => Env.RenameTree(tx, "tree_1", "tree_2"));
+				var ae = Assert.Throws<ArgumentException>(() => tx.RenameTree( "tree_1", "tree_2"));
 
 				Assert.Equal("Cannot rename a new tree with a read only transaction", ae.Message);
 			}
