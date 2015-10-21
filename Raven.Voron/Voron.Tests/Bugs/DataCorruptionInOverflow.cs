@@ -23,9 +23,9 @@ namespace Voron.Tests.Bugs
 			var overflowValue = new byte[testedOverflowSize];
 			new Random(1).NextBytes(overflowValue);
 
-			using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+			using (var tx = Env.WriteTransaction())
 			{
-				var tree = Env.CreateTree(tx, "test");
+				var tree = tx.CreateTree(  "test");
 
 				var itemBytes = new byte[16000];
 
@@ -45,7 +45,7 @@ namespace Voron.Tests.Bugs
 
 			Env.FlushLogToDataFile();
 
-			using (var tx = Env.NewTransaction(TransactionFlags.Read))
+			using (var tx = Env.ReadTransaction())
 			{
 				var tree = tx.ReadTree("test");
 
@@ -67,9 +67,9 @@ namespace Voron.Tests.Bugs
 			var overflowValue = new byte[testedOverflowSize];
 			new Random(1).NextBytes(overflowValue);
 
-			using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+			using (var tx = Env.WriteTransaction())
 			{
-				var tree = Env.CreateTree(tx, "test");
+				var tree = tx.CreateTree(  "test");
 
 				var itemBytes = new byte[2000];
 
@@ -84,9 +84,9 @@ namespace Voron.Tests.Bugs
 				tx.Commit();
 			}
 
-			using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+			using (var tx = Env.WriteTransaction())
 			{
-				var tree = Env.CreateTree(tx, "test");
+				var tree = tx.CreateTree( "test");
 				tree.Delete("items/1");
 				tree.Delete("items/2");
 
@@ -97,7 +97,7 @@ namespace Voron.Tests.Bugs
 
 			Env.FlushLogToDataFile();
 
-			using (var tx = Env.NewTransaction(TransactionFlags.Read))
+			using (var tx = Env.ReadTransaction())
 			{
 				var tree = tx.ReadTree("test");
 
@@ -122,9 +122,9 @@ namespace Voron.Tests.Bugs
 			new Random(1).NextBytes(overflowValue);
 
 
-			using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+			using (var tx = Env.WriteTransaction())
 			{
-				var tree = Env.CreateTree(tx, "test");
+				var tree = tx.CreateTree(  "test");
 
 				var itemBytes = new byte[16000];
 
@@ -144,7 +144,7 @@ namespace Voron.Tests.Bugs
 
 			RestartDatabase();
 
-			using (var tx = Env.NewTransaction(TransactionFlags.Read))
+			using (var tx = Env.ReadTransaction())
 			{
 				var tree = tx.ReadTree("test");
 
@@ -169,9 +169,9 @@ namespace Voron.Tests.Bugs
 			new Random(1).NextBytes(overflowValue);
 
 
-			using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+			using (var tx = Env.WriteTransaction())
 			{
-				var tree = Env.CreateTree(tx, "test");
+				var tree = tx.CreateTree(  "test");
 
 				var itemBytes = new byte[2000];
 
@@ -187,9 +187,9 @@ namespace Voron.Tests.Bugs
 			}
 
 
-			using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+			using (var tx = Env.WriteTransaction())
 			{
-				var tree = Env.CreateTree(tx, "test");
+				var tree = tx.CreateTree(  "test");
 				tree.Delete("items/1");
 				tree.Delete("items/2");
 
@@ -200,7 +200,7 @@ namespace Voron.Tests.Bugs
 
 			RestartDatabase();
 
-			using (var tx = Env.NewTransaction(TransactionFlags.Read))
+			using (var tx = Env.ReadTransaction())
 			{
 				var tree = tx.ReadTree("test");
 
@@ -222,9 +222,9 @@ namespace Voron.Tests.Bugs
 			var overflowValue = new byte[testedOverflowSize];
 			new Random(1).NextBytes(overflowValue);
 
-			using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+			using (var tx = Env.WriteTransaction())
 			{
-				var tree = Env.CreateTree(tx, "test");
+				var tree = tx.CreateTree(  "test");
 
 				var itemBytes = new byte[30000];
 
@@ -239,7 +239,7 @@ namespace Voron.Tests.Bugs
 				tx.Commit();
 			}
 
-			using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+			using (var tx = Env.WriteTransaction())
 			{
 				var tree = tx.ReadTree("test");
 
@@ -252,7 +252,7 @@ namespace Voron.Tests.Bugs
 
 			Env.FlushLogToDataFile();
 
-			using (var tx = Env.NewTransaction(TransactionFlags.Read))
+			using (var tx = Env.ReadTransaction())
 			{
 				var tree = tx.ReadTree("test");
 

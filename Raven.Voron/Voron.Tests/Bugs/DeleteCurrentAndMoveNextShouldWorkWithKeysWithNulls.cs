@@ -15,7 +15,7 @@ namespace Voron.Tests.Bugs
 		{
 			var treeName = CreateTrees(Env, 1, "test").First();
 
-			using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+			using (var tx = Env.WriteTransaction())
 			{
 				var testTree = tx.ReadTree(treeName);
 				testTree.Add("a", "test_value_1");
@@ -25,7 +25,7 @@ namespace Voron.Tests.Bugs
 				tx.Commit();
 			}
 			
-			using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+			using (var tx = Env.WriteTransaction())
 			{
 				var testTree = tx.ReadTree(treeName);
 				using (var iter = testTree.Iterate())
@@ -38,7 +38,7 @@ namespace Voron.Tests.Bugs
 				}
 			}
 
-			using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+			using (var tx = Env.WriteTransaction())
 			{
 				var testTree = tx.ReadTree(treeName);
 				using (var iter = testTree.Iterate())
@@ -51,7 +51,7 @@ namespace Voron.Tests.Bugs
 		{
 			var treeName = CreateTrees(Env, 1, "test").First();
 
-			using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+			using (var tx = Env.WriteTransaction())
 			{
 				var testTree = tx.ReadTree(treeName);
 				testTree.Add("a", "test_value_1");
@@ -61,7 +61,7 @@ namespace Voron.Tests.Bugs
 				tx.Commit();
 			}
 
-			using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+			using (var tx = Env.WriteTransaction())
 			{
 				var testTree = tx.ReadTree(treeName);
 				using (var iter = testTree.Iterate())
@@ -74,10 +74,10 @@ namespace Voron.Tests.Bugs
 				}
 			}
 
-			using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+			using (var tx = Env.WriteTransaction())
 			{
 				var testTree = tx.ReadTree(treeName);
-				Assert.Equal(1, testTree.State.EntriesCount);
+				Assert.Equal(1, testTree.State.NumberOfEntries);
 			}
 		}
 	

@@ -23,34 +23,36 @@ namespace Voron.Tests.Bugs
 			rand.NextBytes(testBuffer);
 
 
-			using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+			using (var tx = Env.WriteTransaction())
 			{
-				Env.CreateTree(tx, "tree1");
+				tx.CreateTree(  "tree1");
 				tx.Commit();
 			}
 
-			var batch = new WriteBatch();
-			for (var i = 0; i < DocumentCount; i++)
+            using (var tx = Env.WriteTransaction())
+            {
+                var tree = tx.CreateTree("tree1");
+                for (var i = 0; i < DocumentCount; i++)
+                    tree.Add("Foo" + i, new MemoryStream(testBuffer));
+                tx.Commit();
+            }
+
+            using (var tx = Env.WriteTransaction())
+            {
+                var tree = tx.CreateTree("tree1");
+                for (var i = 0; i < DocumentCount; i++)
+                {
+                    if (i >= 180)
+                        continue;
+
+                    tree.Delete("Foo" + i);
+                }
+                tx.Commit();
+            }
+
+			using (var tx = Env.WriteTransaction())
 			{
-				batch.Add("Foo" + i, new MemoryStream(testBuffer), "tree1");
-			}
-
-			Env.Writer.Write(batch);
-
-			batch = new WriteBatch();
-			for (var i = 0; i < DocumentCount; i++)
-			{
-				if (i >= 180)
-					continue;
-
-				batch.Delete("Foo" + i, "tree1");
-			}
-
-			Env.Writer.Write(batch);
-
-			using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
-			{
-			    var t1 = tx.Environment.CreateTree(tx,"tree1");
+			    var t1 = tx.CreateTree("tree1");
 				t1.Delete("Foo180"); // rebalancer fails to move 1st node from one branch to another
 			}
 		}
