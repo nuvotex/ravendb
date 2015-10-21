@@ -96,15 +96,12 @@ namespace Voron.Platform.Win32
             NumberOfAllocatedPages = _totalAllocationSize / PageSize;
 		    return newPagerState;
 		}
+        public override string ToString()
+        {
+            return string.Format("{0}, Length: {1:#,#.##;;0} MB", GetSourceName(), _totalAllocationSize / 1024d / 1024d);
+        }
 
-	
-
-		public override string ToString()
-		{
-			return GetSourceName() + ", Length: " + _totalAllocationSize;
-		}
-
-		private PagerState AllocateMorePagesAndRemapContinuously(long allocationSize)
+        private PagerState AllocateMorePagesAndRemapContinuously(long allocationSize)
 		{
 			var retryCount = 0;
 
