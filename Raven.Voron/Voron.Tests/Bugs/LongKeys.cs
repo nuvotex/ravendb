@@ -16,9 +16,9 @@ namespace Voron.Tests.Bugs
 		[Fact]
 		public void ShouldHaveEnoughSpaceDuringTruncate()
 		{
-			using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+			using (var tx = Env.WriteTransaction())
 			{
-				Env.CreateTree(tx, "tree");
+				tx.CreateTree( "tree");
 
 				tx.Commit();
 			}
@@ -29,7 +29,7 @@ namespace Voron.Tests.Bugs
 
 			for (int i = 0; i < 1000; i++)
 			{
-				using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+				using (var tx = Env.WriteTransaction())
 				{
 					var tree = tx.ReadTree("tree");
 
@@ -48,7 +48,7 @@ namespace Voron.Tests.Bugs
 				}
 			}
 
-			using (var tx = Env.NewTransaction(TransactionFlags.Read))
+			using (var tx = Env.ReadTransaction())
 			{
 				var tree = tx.ReadTree("tree");
 
@@ -62,7 +62,7 @@ namespace Voron.Tests.Bugs
 
 			foreach (var key in keys)
 			{
-				using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+				using (var tx = Env.WriteTransaction())
 				{
 					tx.ReadTree("tree").Delete(key); // this makes Debug.Assert(parentPage.NumberOfEntries >= 2) fail
 
@@ -76,9 +76,9 @@ namespace Voron.Tests.Bugs
 		[InlineData(3)]
 		public void ShouldHaveEnoughSpaceWhenSplittingPageInHalf(int seed)
 		{
-			using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+			using (var tx = Env.WriteTransaction())
 			{
-				Env.CreateTree(tx, "tree");
+				tx.CreateTree("tree");
 
 				tx.Commit();
 			}
@@ -88,7 +88,7 @@ namespace Voron.Tests.Bugs
 
 			for (int i = 0; i < 1000; i++)
 			{
-				using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+				using (var tx = Env.WriteTransaction())
 				{
 					var tree = tx.ReadTree("tree");
 
@@ -107,7 +107,7 @@ namespace Voron.Tests.Bugs
 				}
 			}
 
-			using (var tx = Env.NewTransaction(TransactionFlags.Read))
+			using (var tx = Env.ReadTransaction())
 			{
 				var tree = tx.ReadTree("tree");
 
@@ -121,7 +121,7 @@ namespace Voron.Tests.Bugs
 
 			foreach (var key in keys)
 			{
-				using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+				using (var tx = Env.WriteTransaction())
 				{
 					tx.ReadTree("tree").Delete(key); // this makes Debug.Assert(parentPage.NumberOfEntries >= 2) fail
 
@@ -136,9 +136,9 @@ namespace Voron.Tests.Bugs
 		[InlineData(4)]
 		public void NoDebugAssertShouldThrownDuringRebalancing(int seed)
 		{
-			using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+			using (var tx = Env.WriteTransaction())
 			{
-				Env.CreateTree(tx, "tree");
+				tx.CreateTree("tree");
 
 				tx.Commit();
 			}
@@ -149,7 +149,7 @@ namespace Voron.Tests.Bugs
 
 			for (int i = 0; i < 1000; i++)
 			{
-				using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+				using (var tx = Env.WriteTransaction())
 				{
 					var tree = tx.ReadTree("tree");
 
@@ -172,7 +172,7 @@ namespace Voron.Tests.Bugs
 				}
 			}
 
-			using (var tx = Env.NewTransaction(TransactionFlags.Read))
+			using (var tx = Env.ReadTransaction())
 			{
 				var tree = tx.ReadTree("tree");
 
@@ -186,7 +186,7 @@ namespace Voron.Tests.Bugs
 
 			foreach (var key in addedKeys)
 			{
-				using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+				using (var tx = Env.WriteTransaction())
 				{
 					tx.ReadTree("tree").Delete(key); // this makes Debug.Assert(parentPage.NumberOfEntries >= 2) fail
 

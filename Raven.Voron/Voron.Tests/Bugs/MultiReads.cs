@@ -14,7 +14,7 @@ namespace Voron.Tests.Bugs
 		{
 			foreach (var treeName in CreateTrees(Env, 1, "tree"))
 			{
-				using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+				using (var tx = Env.WriteTransaction())
 				{
 					tx.ReadTree(treeName).MultiAdd("queue1", "queue1/07000000-0000-0000-0000-000000000001");
 					tx.ReadTree(treeName).MultiAdd("queue1", "queue1/07000000-0000-0000-0000-000000000002");
@@ -22,8 +22,8 @@ namespace Voron.Tests.Bugs
 					tx.Commit();
 				}
 
-				using (var snapshot = Env.CreateSnapshot())
-				using (var iterator = snapshot.MultiRead(treeName, "queue1"))
+				using (var snapshot = Env.ReadTransaction())
+				using (var iterator = snapshot.CreateTree("queue1").MultiRead(treeName))
 				{
 					Assert.True(iterator.Seek(Slice.BeforeAllKeys));
 

@@ -18,13 +18,13 @@ namespace Voron.Tests.Bugs
 			using (var env = new StorageEnvironment(StorageEnvironmentOptions.CreateMemoryOnly()))
 			{
 				var multiTrees = CreateTrees(env, 1, "multiTree");
-				using (var tx = env.NewTransaction(TransactionFlags.ReadWrite))
+				using (var tx = env.WriteTransaction())
 				{
 					for (var i = 0; i < 120; i++)
 					{
 						foreach (var multiTreeName in multiTrees)
 						{
-						    var multiTree = tx.Environment.CreateTree(tx,multiTreeName);
+						    var multiTree = tx.CreateTree(multiTreeName);
 							var id = Guid.NewGuid().ToString();
 
 							addedIds.Add("test/0/user-" + i, id);
@@ -35,7 +35,7 @@ namespace Voron.Tests.Bugs
 
 					foreach (var multiTreeName in multiTrees)
 					{
-                        var multiTree = tx.Environment.CreateTree(tx,multiTreeName);
+                        var multiTree = tx.CreateTree(multiTreeName);
 						multiTree.MultiAdd("test/0/user-50", Guid.NewGuid().ToString());
 					}
 
@@ -45,11 +45,11 @@ namespace Voron.Tests.Bugs
 
 				for (var i = 119; i > 99; i--)
 				{
-					using (var tx = env.NewTransaction(TransactionFlags.ReadWrite))
+					using (var tx = env.WriteTransaction())
 					{
                         foreach (var multiTreeName in multiTrees)
                         {
-                            var multiTree = tx.Environment.CreateTree(tx,multiTreeName);
+                            var multiTree = tx.CreateTree(multiTreeName);
 					
 							multiTree.MultiDelete("test/0/user-" + i, addedIds["test/0/user-" + i]);
 						}
@@ -62,15 +62,13 @@ namespace Voron.Tests.Bugs
 
 				for (var i = 0; i < 50; i++)
 				{
-					using (var tx = env.NewTransaction(TransactionFlags.ReadWrite))
+					using (var tx = env.WriteTransaction())
 					{
-						if (i == 29)
-						{
-						}
+				
 
                         foreach (var multiTreeName in multiTrees)
                         {
-                            var multiTree = tx.Environment.CreateTree(tx,multiTreeName);
+                            var multiTree = tx.CreateTree(multiTreeName);
 					
 							multiTree.MultiDelete("test/0/user-" + i, addedIds["test/0/user-" + i]);
 						}
@@ -87,11 +85,11 @@ namespace Voron.Tests.Bugs
 
 		private void ValidateMulti(StorageEnvironment env, IEnumerable<string> trees)
 		{
-			using (var snapshot = env.CreateSnapshot())
+			using (var snapshot = env.ReadTransaction())
 			{
 				foreach (var tree in trees)
 				{
-					using (var iterator = snapshot.MultiRead(tree, "test/0/user-50"))
+					using (var iterator = snapshot.ReadTree(tree).MultiRead( "test/0/user-50"))
 					{
 						Assert.True(iterator.Seek(Slice.BeforeAllKeys));
 
@@ -117,9 +115,9 @@ namespace Voron.Tests.Bugs
 		[Fact]
 		public void ShouldNotThrowThatPageIsFullDuringTreeRebalancing()
 		{
-			using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+			using (var tx = Env.WriteTransaction())
 			{
-				var tree = Env.CreateTree(tx, "rebalancing-issue");
+				var tree = tx.CreateTree( "rebalancing-issue");
 
 				var aKey = new string('a', 1024);
 				var bKey = new string('b', 1024);
@@ -134,8 +132,6 @@ namespace Voron.Tests.Bugs
 				tree.Add(dKey, new MemoryStream(new byte[1000]));
 				tree.Add(eKey, new MemoryStream(new byte[800]));
 				tree.Add(fKey, new MemoryStream(new byte[10]));
-
-                DebugStuff.RenderAndShowTree(tx, 1);
 
                 // to expose the bug we need to delete the last item from the left most page
                 // tree rebalance will try to fix the first reference (the implicit ref page node) in the parent page which is almost full 
@@ -170,9 +166,9 @@ namespace Voron.Tests.Bugs
 		[Fact]
 		public void RavenDB_2543_CouldNotEnsureThatWeHaveEnoughSpace_When_MovingLeafNode()
 		{
-			using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+			using (var tx = Env.WriteTransaction())
 			{
-				var tree = Env.CreateTree(tx, "rebalancing-issue");
+				var tree = tx.CreateTree( "rebalancing-issue");
 
 				var aKey = new string('a', 1000);
 				var bKey = new string('b', 1000);
@@ -204,12 +200,10 @@ namespace Voron.Tests.Bugs
 				tree.Add(mKey, new MemoryStream(new byte[100]));
 				tree.Add(nKey, new MemoryStream(new byte[1000]));
 
-                DebugStuff.RenderAndShowTree(tx,1);
 
 
                 tree.Delete(nKey);  // this line throws "The page is full and cannot add an entry, this is probably a bug"
 
-                DebugStuff.RenderAndShowTree(tx, 1);
 
                 tx.Commit();
 

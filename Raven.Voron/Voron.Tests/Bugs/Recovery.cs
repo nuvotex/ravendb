@@ -38,9 +38,9 @@ namespace Voron.Tests.Bugs
 
 			using (var env = new StorageEnvironment(StorageEnvironmentOptions.ForPath(path)))
 			{
-				using (var tx = env.NewTransaction(TransactionFlags.ReadWrite))
+				using (var tx = env.WriteTransaction())
 				{
-					var tree = env.CreateTree(tx, "tree");
+					var tree = tx.CreateTree(  "tree");
 
 					for (var i = 0; i < 100; i++)
 					{
@@ -53,17 +53,17 @@ namespace Voron.Tests.Bugs
 
 			using (var env = new StorageEnvironment(StorageEnvironmentOptions.ForPath(path)))
 			{
-				using (var tx = env.NewTransaction(TransactionFlags.ReadWrite))
+				using (var tx = env.WriteTransaction())
 				{
-					env.CreateTree(tx, "tree");
+					tx.CreateTree(  "tree");
 
 					tx.Commit();
 				}
 
 
-				using (var tx = env.NewTransaction(TransactionFlags.Read))
+				using (var tx = env.ReadTransaction())
 				{
-					var tree = tx.Environment.CreateTree(tx,"tree");
+					var tree = tx.CreateTree("tree");
 
 					for (var i = 0; i < 100; i++)
 					{
@@ -84,18 +84,18 @@ namespace Voron.Tests.Bugs
 
 			using (var env = new StorageEnvironment(StorageEnvironmentOptions.ForPath(path)))
 			{
-				using (var tx = env.NewTransaction(TransactionFlags.ReadWrite))
+				using (var tx = env.WriteTransaction())
 				{
-					env.CreateTree(tx, "tree");
+					tx.CreateTree(  "tree");
 
 					tx.Commit();
 				}
 
-				using (var tx = env.NewTransaction(TransactionFlags.ReadWrite))
+				using (var tx = env.WriteTransaction())
 				{
 					for (var i = 0; i < 10000; i++)
 					{
-						tx.Environment.CreateTree(tx,"tree").Add("a" + i, new MemoryStream());
+						tx.CreateTree("tree").Add("a" + i, new MemoryStream());
 					}
 				}
 			}
@@ -115,20 +115,20 @@ namespace Voron.Tests.Bugs
 
 			using (var env = new StorageEnvironment(StorageEnvironmentOptions.ForPath(path)))
 			{
-				using (var tx = env.NewTransaction(TransactionFlags.ReadWrite))
+				using (var tx = env.WriteTransaction())
 				{
-					env.CreateTree(tx, "atree");
-					env.CreateTree(tx, "btree");
+					tx.CreateTree("atree");
+					tx.CreateTree("btree");
 
 					tx.Commit();
 				}
 
-				using (var tx = env.NewTransaction(TransactionFlags.ReadWrite))
+				using (var tx = env.WriteTransaction())
 				{
 					for (var i = 0; i < 10000; i++)
 					{
-						tx.Environment.CreateTree(tx,"atree").Add("a" + i, new MemoryStream());
-						tx.Environment.CreateTree(tx,"btree").MultiAdd("a" + i, "a" + i);
+						tx.CreateTree("atree").Add("a" + i, new MemoryStream());
+						tx.CreateTree("btree").MultiAdd("a" + i, "a" + i);
 					}
 				}
 			}
@@ -149,9 +149,9 @@ namespace Voron.Tests.Bugs
 
 			using (var env = new StorageEnvironment(StorageEnvironmentOptions.ForPath(path)))
 			{
-				using (var tx = env.NewTransaction(TransactionFlags.ReadWrite))
+				using (var tx = env.WriteTransaction())
 				{
-					var tree = env.CreateTree(tx, "atree");
+					var tree = tx.CreateTree( "atree");
 
 					for (var i = 0; i < 1000; i++)
 					{
@@ -161,9 +161,9 @@ namespace Voron.Tests.Bugs
 					tx.Commit();
 				}
 
-				using (var tx = env.NewTransaction(TransactionFlags.ReadWrite))
+				using (var tx = env.WriteTransaction())
 				{
-					var tree = env.CreateTree(tx, "btree");
+					var tree = tx.CreateTree( "btree");
 
 					for (var i = 0; i < 1; i++)
 					{
@@ -176,18 +176,18 @@ namespace Voron.Tests.Bugs
 
 			using (var env = new StorageEnvironment(StorageEnvironmentOptions.ForPath(path)))
 			{
-				using (var tx = env.NewTransaction(TransactionFlags.ReadWrite))
+				using (var tx = env.WriteTransaction())
 				{
-					env.CreateTree(tx, "atree");
-					env.CreateTree(tx, "btree");
+					tx.CreateTree("atree");
+					tx.CreateTree("btree");
 
 					tx.Commit();
 				}
 
-				using (var tx = env.NewTransaction(TransactionFlags.Read))
+				using (var tx = env.ReadTransaction())
 				{
-					var aTree = tx.Environment.CreateTree(tx,"atree");
-					var bTree = tx.Environment.CreateTree(tx,"btree");
+					var aTree = tx.CreateTree("atree");
+					var bTree = tx.CreateTree("btree");
 
 					for (var i = 0; i < 1000; i++)
 					{
@@ -213,9 +213,9 @@ namespace Voron.Tests.Bugs
 
 			using (var env = new StorageEnvironment(StorageEnvironmentOptions.ForPath(path)))
 			{
-				using (var tx = env.NewTransaction(TransactionFlags.ReadWrite))
+				using (var tx = env.WriteTransaction())
 				{
-					var tree = env.CreateTree(tx, "atree");
+					var tree = tx.CreateTree( "atree");
 
 					for (var i = 0; i < 1000; i++)
 					{
@@ -225,9 +225,9 @@ namespace Voron.Tests.Bugs
 					tx.Commit();
 				}
 
-				using (var tx = env.NewTransaction(TransactionFlags.ReadWrite))
+				using (var tx = env.WriteTransaction())
 				{
-					var tree = env.CreateTree(tx, "btree");
+					var tree = tx.CreateTree("btree");
 
 					for (var i = 0; i < 5; i++)
 					{
@@ -240,18 +240,18 @@ namespace Voron.Tests.Bugs
 
 			using (var env = new StorageEnvironment(StorageEnvironmentOptions.ForPath(path)))
 			{
-				using (var tx = env.NewTransaction(TransactionFlags.ReadWrite))
+				using (var tx = env.WriteTransaction())
 				{
-					env.CreateTree(tx, "atree");
-					env.CreateTree(tx, "btree");
+					tx.CreateTree( "atree");
+					tx.CreateTree( "btree");
 
 					tx.Commit();
 				}
 
-				using (var tx = env.NewTransaction(TransactionFlags.Read))
+				using (var tx = env.ReadTransaction())
 				{
-					var aTree = tx.Environment.CreateTree(tx,"atree");
-					var bTree = tx.Environment.CreateTree(tx,"btree");
+					var aTree = tx.CreateTree("atree");
+					var bTree = tx.CreateTree("btree");
 
 					for (var i = 0; i < 1000; i++)
 					{
@@ -283,18 +283,18 @@ namespace Voron.Tests.Bugs
 
 			using (var env = new StorageEnvironment(options))
 			{
-				using (var tx = env.NewTransaction(TransactionFlags.ReadWrite))
+				using (var tx = env.WriteTransaction())
 				{
-					env.CreateTree(tx, "atree");
-					env.CreateTree(tx, "btree");
+					tx.CreateTree( "atree");
+                    tx.CreateTree( "btree");
 
 					tx.Commit();
 				}
 
-				using (var tx = env.NewTransaction(TransactionFlags.ReadWrite))
+				using (var tx = env.WriteTransaction())
 				{
-					var aTree = tx.Environment.CreateTree(tx,"atree");
-					var bTree = tx.Environment.CreateTree(tx,"btree");
+					var aTree = tx.CreateTree("atree");
+					var bTree = tx.CreateTree("btree");
 
 					for (var i = 0; i < count; i++)
 					{
@@ -313,18 +313,18 @@ namespace Voron.Tests.Bugs
 
 			using (var env = new StorageEnvironment(options))
 			{
-				using (var tx = env.NewTransaction(TransactionFlags.ReadWrite))
+				using (var tx = env.WriteTransaction())
 				{
-					env.CreateTree(tx, "atree");
-					env.CreateTree(tx, "btree");
+					tx.CreateTree( "atree");
+					tx.CreateTree( "btree");
 
 					tx.Commit();
 				}
 
-				using (var tx = env.NewTransaction(TransactionFlags.Read))
+				using (var tx = env.ReadTransaction())
 				{
-					var aTree = tx.Environment.CreateTree(tx,"atree");
-					var bTree = tx.Environment.CreateTree(tx,"btree");
+					var aTree = tx.CreateTree("atree");
+					var bTree = tx.CreateTree("btree");
 
 					for (var i = 0; i < count; i++)
 					{

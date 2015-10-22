@@ -20,14 +20,14 @@ namespace Voron.Tests.Bugs
 			{
 				CreateTrees(env, 1, "tree");
 
-				using (var txw = env.NewTransaction(TransactionFlags.ReadWrite))
+				using (var txw = env.WriteTransaction())
 				{
-					txw.Environment.CreateTree(txw, "tree0").Add("key/1", new MemoryStream());
+					txw.CreateTree("tree0").Add("key/1", new MemoryStream());
 					txw.Commit();
 
-					using (var txr = env.NewTransaction(TransactionFlags.Read))
+					using (var txr = env.ReadTransaction())
 					{
-						Assert.NotNull(txr.Environment.CreateTree(txr, "tree0").Read("key/1"));
+						Assert.NotNull(txr.CreateTree("tree0").Read("key/1"));
 					}
 				}
 			}
@@ -71,10 +71,13 @@ namespace Voron.Tests.Bugs
 								var tIndex = random.Next(0, numberOfTrees - 1);
 								var treeName = trees[tIndex];
 
-								var batch = new WriteBatch();
-								batch.Add("testdocuments/" + random.Next(0, 100000), new MemoryStream(buffer), treeName);
+							    using (var tx = Env.WriteTransaction())
+							    {
+							        var tree = tx.CreateTree(treeName);
+							        tree.Add("testdocuments/" + random.Next(0, 100000), new MemoryStream(buffer));
+                                    tx.Commit();
+							    }
 
-								Env.Writer.Write(batch);
 							}
 						});
 				},
@@ -96,8 +99,8 @@ namespace Voron.Tests.Bugs
 										var tIndex = random.Next(0, numberOfTrees - 1);
 										var treeName = trees[tIndex];
 
-										using (var snapshot = Env.CreateSnapshot())
-										using (var iterator = snapshot.Iterate(treeName))
+										using (var snapshot = Env.ReadTransaction())
+										using (var iterator = snapshot.ReadTree(treeName).Iterate())
 										{
 											if (!iterator.Seek(Slice.BeforeAllKeys))
 											{
@@ -142,16 +145,16 @@ namespace Voron.Tests.Bugs
 			options.ManualFlushing = true;
 			using (var env = new StorageEnvironment(options))
 			{
-				using (var txw = env.NewTransaction(TransactionFlags.ReadWrite))
+				using (var txw = env.WriteTransaction())
 				{
-					env.CreateTree(txw, "test");
+					txw.CreateTree("test");
 
 					txw.Commit();
 				}
 
-				using (var txw = env.NewTransaction(TransactionFlags.ReadWrite))
+				using (var txw = env.WriteTransaction())
 				{
-					var tree = txw.Environment.CreateTree(txw, "test");
+					var tree = txw.CreateTree("test");
 
 					tree.Add("key/1", new MemoryStream(new byte[100]));
 					tree.Add("key/1", new MemoryStream(new byte[200]));

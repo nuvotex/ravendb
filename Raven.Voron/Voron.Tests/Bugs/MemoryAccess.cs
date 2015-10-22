@@ -20,7 +20,7 @@ namespace Voron.Tests.Bugs
 
 			for (int a = 0; a < 2; a++)
 			{
-				using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+				using (var tx = Env.WriteTransaction())
 				{
 					foreach (var tree in trees)
 					{
@@ -32,7 +32,7 @@ namespace Voron.Tests.Bugs
 				}
 			}
 
-			using (var txr = Env.NewTransaction(TransactionFlags.Read))
+			using (var txr = Env.ReadTransaction())
 			{
 				foreach (var tree in trees)
 				{
@@ -43,7 +43,7 @@ namespace Voron.Tests.Bugs
 
 						Env.FlushLogToDataFile();
 
-						using (var txw = Env.NewTransaction(TransactionFlags.ReadWrite))
+						using (var txw = Env.WriteTransaction())
 						{
 							txw.ReadTree(tree).Add(string.Format("key/{0}/0/0", new string('0', 1000)), new MemoryStream());
 

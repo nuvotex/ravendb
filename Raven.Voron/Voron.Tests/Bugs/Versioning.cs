@@ -19,33 +19,33 @@
 			var testBuffer = new byte[123];
 			rand.NextBytes(testBuffer);
 
-			Tree t1 = null;
 
-			using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+			using (var tx = Env.WriteTransaction())
 			{
-				t1 = Env.CreateTree(tx, "tree1");
+				tx.CreateTree("tree1");
 				tx.Commit();
 			}
 
-			var batch = new WriteBatch();
-			for (var i = 0; i < DocumentCount; i++)
-			{
-				batch.Add("Foo" + i, new MemoryStream(testBuffer), "tree1");
-			}
+            using (var tx = Env.WriteTransaction())
+            {
+                var tree = tx.CreateTree("tree1");
+                for (var i = 0; i < DocumentCount; i++)
+                {
+                    tree.Add("Foo" + i, new MemoryStream(testBuffer));
 
-			Env.Writer.Write(batch);
+                }
+                tx.Commit();
+            }
 
-			batch = new WriteBatch();
-			using (var snapshot = Env.CreateSnapshot())
+			using (var snapshot = Env.WriteTransaction())
 			{
 				for (var i = 0; i < DocumentCount; i++)
 				{
-					var result = snapshot.Read("tree1", "Foo" + 1, null);
-					batch.Delete("Foo" + i, "tree1", result.Version);
+				    var readTree = snapshot.ReadTree("tree1");
+				    var result = readTree.Read("Foo" + 1);
+					readTree.Delete("Foo" + i, result.Version);
 				}
 			}
-
-			Env.Writer.Write(batch);
 		}
 	}
 }

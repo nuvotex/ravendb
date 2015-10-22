@@ -14,14 +14,14 @@ namespace Voron.Tests.Bugs
 		{
 			using (var env = new StorageEnvironment(StorageEnvironmentOptions.CreateMemoryOnly()))
 			{
-				using (var tx = env.NewTransaction(TransactionFlags.ReadWrite))
+				using (var tx = env.WriteTransaction())
 				{
-					env.CreateTree(tx, "tree");
+					tx.CreateTree("tree");
 
 					tx.Commit();
 				}
 
-				using (var tx = env.NewTransaction(TransactionFlags.ReadWrite))
+				using (var tx = env.WriteTransaction())
 				{
 					var tree = tx.ReadTree("tree");
 					tree.Add(@"Raven\Database\1", StreamFor("123"));
@@ -29,8 +29,8 @@ namespace Voron.Tests.Bugs
 					tx.Commit();
 				}
 
-				using (var snapshot = env.CreateSnapshot())
-				using (var iterator = snapshot.Iterate("tree"))
+				using (var snapshot = env.ReadTransaction())
+				using (var iterator = snapshot.ReadTree("tree").Iterate())
 				{
 					Assert.False(iterator.Seek(@"Raven\Filesystem\"));
 				}

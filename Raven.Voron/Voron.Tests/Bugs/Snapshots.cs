@@ -33,15 +33,15 @@ namespace Voron.Tests.Bugs
 			rand.NextBytes(testBuffer);
 
 
-			using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+			using (var tx = Env.WriteTransaction())
 			{
-				Env.CreateTree(tx, "tree1");
+				tx.CreateTree(  "tree1");
 				tx.Commit();
 			}
 
-			using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+			using (var tx = Env.WriteTransaction())
 			{
-			    var t1 = tx.Environment.CreateTree(tx,"tree1");
+			    var t1 = tx.CreateTree("tree1");
 				for (var i = 0; i < DocumentCount; i++)
 				{
 					t1.Add("docs/" + i, new MemoryStream(testBuffer));
@@ -50,11 +50,11 @@ namespace Voron.Tests.Bugs
 				tx.Commit();
 			}
 
-			using (var snapshot = Env.CreateSnapshot())
+			using (var snapshot = Env.ReadTransaction())
 			{
-                using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+                using (var tx = Env.WriteTransaction())
 				{
-				    var t1 = tx.Environment.CreateTree(tx,"tree1");
+				    var t1 = tx.CreateTree("tree1");
 					for (var i = 0; i < DocumentCount; i++)
 					{
 						t1.Delete("docs/" + i);
@@ -65,7 +65,7 @@ namespace Voron.Tests.Bugs
 
 				for (var i = 0; i < DocumentCount; i++)
 				{
-					var result = snapshot.Read("tree1", "docs/" + i);
+					var result = snapshot.CreateTree("tree1").Read("docs/" + i);
 					Assert.NotNull(result);
 
 					{
@@ -87,15 +87,15 @@ namespace Voron.Tests.Bugs
 
 			_options.ManualFlushing = true;
 
-			using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+			using (var tx = Env.WriteTransaction())
 			{
-				Env.CreateTree(tx, "tree1");
+				tx.CreateTree( "tree1");
 				tx.Commit();
 			}
 
-			using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+			using (var tx = Env.WriteTransaction())
 			{
-				var t1 = tx.Environment.CreateTree(tx, "tree1");
+				var t1 = tx.CreateTree("tree1");
 				for (var i = 0; i < DocumentCount; i++)
 				{
 					t1.Add("docs/" + i, new MemoryStream(testBuffer));
@@ -106,11 +106,11 @@ namespace Voron.Tests.Bugs
 
 			Env.FlushLogToDataFile();
 
-			using (var snapshot = Env.CreateSnapshot())
+			using (var snapshot = Env.ReadTransaction())
 			{
-				using (var tx = Env.NewTransaction(TransactionFlags.ReadWrite))
+				using (var tx = Env.WriteTransaction())
 				{
-					var t1 = tx.Environment.CreateTree(tx, "tree1");
+					var t1 = tx.CreateTree( "tree1");
 					for (var i = 0; i < DocumentCount; i++)
 					{
 						t1.Delete("docs/" + i);
@@ -123,7 +123,7 @@ namespace Voron.Tests.Bugs
 
 				for (var i = 0; i < DocumentCount; i++)
 				{
-					var result = snapshot.Read("tree1", "docs/" + i);
+					var result = snapshot.ReadTree("tree1").Read( "docs/" + i);
 					Assert.NotNull(result);
 
 					{

@@ -35,13 +35,15 @@ namespace Voron.Tests.Bugs
 
 			while (Env.ScratchBufferPool.GetPagerStatesOfAllScratches().Count < 2)
 			{
-				using (var txw = Env.NewTransaction(TransactionFlags.ReadWrite))
+				using (var txw = Env.WriteTransaction())
 				{
 					var value = new byte[size];
 
 					random.NextBytes(value);
 
-					txw.Root.Add("items/", value);
+				    var tree = txw.CreateTree("foo/0");
+
+                    tree.Add("items/", value);
 
 					txw.Commit();
 				}
@@ -51,11 +53,12 @@ namespace Voron.Tests.Bugs
 
 			for (int i = 0; i < 100; i++)
 			{
-				using (var txw = Env.NewTransaction(TransactionFlags.ReadWrite))
+				using (var txw = Env.WriteTransaction())
 				{
-					var tree = Env.CreateTree(txw, "foo");
+                    var tree = txw.CreateTree("foo");
 
-					var value = new byte[Env.Options.PageSize];
+
+                    var value = new byte[Env.Options.PageSize];
 
 					random.NextBytes(value);
 
@@ -65,11 +68,11 @@ namespace Voron.Tests.Bugs
 				}
 			}
 
-			using (var txw = Env.NewTransaction(TransactionFlags.ReadWrite))
+			using (var txw = Env.WriteTransaction())
 			{
-				var tree = Env.CreateTree(txw, "foo/1");
+                var tree = txw.CreateTree("foo/1");
 
-				var value = new byte[40 * Env.Options.PageSize];
+                var value = new byte[40 * Env.Options.PageSize];
 
 				random.NextBytes(value);
 
