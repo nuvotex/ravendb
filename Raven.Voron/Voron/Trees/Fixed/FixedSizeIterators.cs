@@ -247,7 +247,7 @@ namespace Voron.Trees.Fixed
 				var currentKey = CurrentKey;
 				
 				_parent.RemoveLargeEntry(currentKey);
-				if (_parent._flags == FixedSizeTreeHeader.OptionFlags.Large)
+				if (_parent._type == RootObjectType.FixedSizeTree)
 				{
 					return Seek(currentKey);
 				}
