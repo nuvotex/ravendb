@@ -290,9 +290,9 @@ namespace Voron
 
 		public string ToStringValue()
 		{
-            int used;
 	        int length = _len - _pos;
-	        return Encoding.UTF8.GetString(ReadBytes(length, out used), 0, used);
+		    var arraySegment = ReadBytes(length);
+		    return Encoding.UTF8.GetString(arraySegment.Array, arraySegment.Offset, arraySegment.Count);
 		}
 
 		public override string ToString()
@@ -303,12 +303,12 @@ namespace Voron
 			return stringValue;
 		}
 
-	    public byte[] ReadBytes(int length, out int used)
+	    public ArraySegment<byte> ReadBytes(int length)
 		{
 			int size = Math.Min(length, _len - _pos);
 	        var buffer = EnsureTempBuffer(length);
-			used = Read(buffer, 0, size);
-			return buffer;
+			var used = Read(buffer, 0, size);
+			return new ArraySegment<byte>(buffer, 0, used);
 		}
 
 		public void CopyTo(Stream stream)
