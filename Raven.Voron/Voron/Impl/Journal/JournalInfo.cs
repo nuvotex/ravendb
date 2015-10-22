@@ -15,12 +15,12 @@ namespace Voron.Impl.Journal
 		public long CurrentJournal;
 
 		[FieldOffset(8)]
-		public int JournalFilesCount;
-
-		[FieldOffset(12)]
 		public long LastSyncedJournal;
 
-		[FieldOffset(20)]
+		[FieldOffset(16)]
 		public long LastSyncedTransactionId;
-	}
+
+        [FieldOffset(24)]
+        public int JournalFilesCount;
+    }
 }
