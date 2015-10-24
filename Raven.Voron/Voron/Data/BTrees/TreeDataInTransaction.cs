@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Voron.Trees
+﻿namespace Voron.Data.BTrees
 {
 //    public class TreeDataInTransaction
 //    {

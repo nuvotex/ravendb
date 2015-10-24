@@ -1,13 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Voron.Impl;
 using Voron.Impl.FileHeaders;
 
-namespace Voron.Trees.Compact
+namespace Voron.Data.Compact
 {
     public unsafe partial class PrefixTree
     {

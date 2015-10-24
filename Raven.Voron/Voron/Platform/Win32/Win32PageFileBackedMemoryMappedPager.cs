@@ -9,7 +9,6 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using Voron.Impl;
 using Voron.Impl.Paging;
-using Voron.Trees;
 using Voron.Util;
 
 namespace Voron.Platform.Win32

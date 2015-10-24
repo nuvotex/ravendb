@@ -11,7 +11,6 @@ using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
 using Voron.Impl;
 using Voron.Impl.Paging;
-using Voron.Trees;
 using Voron.Util;
 using Sparrow;
 

@@ -1,7 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using Voron.Data.BTrees;
 
-namespace Voron.Trees
+namespace Voron.Data
 {
 	public unsafe class EmptyIterator : IIterator
 	{

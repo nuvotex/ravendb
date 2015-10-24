@@ -1,4 +1,4 @@
-﻿namespace Voron.Trees
+﻿namespace Voron.Data.BTrees
 {
 	public enum TreeNodeFlags : byte
 	{

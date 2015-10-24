@@ -1,8 +1,7 @@
 ﻿using System;
-using System.IO;
 using System.Runtime.InteropServices;
 
-namespace Raven.Unix.Native
+namespace Voron.Platform.Posix
 {
     // Take from https://github.com/mono/mono/blob/master/mcs/class/Mono.Posix/Mono.Unix.Native/Syscall.cs
     // Used this way to avoid taking a hard dependency on the Mono.Posix.dll
@@ -764,7 +763,7 @@ namespace Raven.Unix.Native
 		_SC_LEVEL4_CACHE_LINESIZE
 	}
 
-	[System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
+	[StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
 	public struct sysinfo_t
 	{
 		public System.UIntPtr  uptime;             /* Seconds since boot */
