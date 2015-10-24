@@ -43,10 +43,10 @@ namespace Voron.Impl.Paging
 
         protected AbstractPager(int pageSize)
         {
-            Debug.Assert((pageSize - Constants.PageHeaderSize) / Constants.MinKeysInPage >= 1024);
+            Debug.Assert((pageSize - Constants.TreePageHeaderSize) / Constants.MinKeysInPage >= 1024);
 
 	        PageSize = pageSize;
-	        PageMaxSpace = PageSize - Constants.PageHeaderSize;
+	        PageMaxSpace = PageSize - Constants.TreePageHeaderSize;
 	        NodeMaxSize = PageMaxSpace/2 - 1;
 			// MaxNodeSize is usually persisted as an unsigned short. Therefore, we must ensure it is not possible to have an overflow.
             Debug.Assert(NodeMaxSize < ushort.MaxValue);
