@@ -31,7 +31,7 @@ namespace Rachis.Interfaces
 		ISnapshotWriter GetSnapshotWriter();
 
 		/// <summary>
-		/// Nothing else may access the state machine when this is running, this is guranteed by Raft.
+		/// Nothing else may access the state machine when this is running, this is guaranteed by Raft.
 		/// </summary>
 		void ApplySnapshot(long term, long index, Stream stream);
 	}
