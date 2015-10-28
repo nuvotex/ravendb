@@ -21,16 +21,10 @@ namespace Raven.Database.TimeSeries.Controllers
 {
 	public abstract class BaseTimeSeriesApiController : ResourceApiController<TimeSeriesStorage, TimeSeriesLandlord>
 	{
-		public TimeSeriesStateMachine StateMachine { get; private set; }
-
-		public RaftEngine RaftEngine { get; private set; }
-
 		public override async Task<HttpResponseMessage> ExecuteAsync(HttpControllerContext controllerContext, CancellationToken cancellationToken)
 		{
-			RaftEngine = (RaftEngine)controllerContext.Configuration.Properties[typeof(TimeSeriesLandlord)];
-			StateMachine = (TimeSeriesStateMachine)RaftEngine.StateMachine;
-
-			try
+		    var RaftEngine = TimeSeries.RaftEngine;
+		    try
 			{
 				return await base.ExecuteAsync(controllerContext, cancellationToken).ConfigureAwait(false);
 			}

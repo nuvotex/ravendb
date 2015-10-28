@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading;
+using Rachis;
 using Raven.Abstractions;
 using Raven.Abstractions.Logging;
 using Raven.Abstractions.TimeSeries;
@@ -25,7 +26,7 @@ using Voron.Trees.Fixed;
 using Voron.Util;
 using Voron.Util.Conversion;
 using Constants = Raven.Abstractions.Data.Constants;
-using Transaction = Voron.Impl.Transaction;
+using Transaction = Raven.Abstractions.Data.Constants.Voron.Impl.Transaction;
 
 namespace Raven.Database.TimeSeries
 {
@@ -90,6 +91,7 @@ namespace Raven.Database.TimeSeries
 
 		private void Initialize()
 		{
+		    RaftEngine = new RaftEngine();
 			using (var tx = storageEnvironment.NewTransaction(TransactionFlags.ReadWrite))
 			{
 				storageEnvironment.CreateTree(tx, TreeNames.OpenLog);
@@ -1129,8 +1131,9 @@ namespace Raven.Database.TimeSeries
 		{
 			get { return storageEnvironment; }
 		}
+	    public RaftEngine RaftEngine { get; private set; }
 
-		private TimeSeriesType GetTimeSeriesType(Tree metadata, string type)
+	    private TimeSeriesType GetTimeSeriesType(Tree metadata, string type)
 		{
 			var readResult = metadata.Read(TypesPrefix + type);
 			if (readResult == null)

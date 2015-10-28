@@ -29,31 +29,69 @@ namespace Raven.Database.TimeSeries.Raft
 {
 	public class TimeSeriesStateMachine : IRaftStateMachine
 	{
-		public void Dispose()
+	    private readonly TimeSeriesStorage storage;
+
+	    public TimeSeriesStateMachine(TimeSeriesStorage storage)
+	    {
+	        this.storage = storage;
+	    }
+
+	    public void Dispose()
 		{
-			throw new NotImplementedException();
+			
 		}
 
-		public long LastAppliedIndex { get; }
-		public void Apply(LogEntry entry, Command cmd)
-		{
-			throw new NotImplementedException();
-		}
+	    public long LastAppliedIndex
+	    {
+	        get { return storage.CreateReader().ReadLastAppliedIndex(); }
+	    }
 
-		public bool SupportSnapshots { get; }
+	    public class TimeSeriesCommand : Command
+	    {
+	        
+	    }
+
+	    public class AppendTSCmd : TimeSeriesCommand
+	    {
+	        public string Name;
+	        public string Type;
+	        public DateTime Time;
+	        public double[] Values;
+	    }
+
+	    public class RemoveRangeTSCMD : TimeSeriesCommand
+	    {
+            public string Name;
+            public string Type;
+	        public DateTime Start, End;
+	    }
+
+        public void Apply(LogEntry entry, Command cmd)
+        {
+            var appendTsCmd = cmd as AppendTSCmd;
+            if (appendTsCmd != null)
+            {
+                using (var w = storage.CreateWriter())
+                {
+                    w.Append(appendTsCmd.Type, appendTsCmd.Name, appendTsCmd.Time, appendTsCmd.Values);
+                }
+            }
+        }
+
+	    public bool SupportSnapshots { get { return false; } }
 		public void CreateSnapshot(long index, long term, ManualResetEventSlim allowFurtherModifications)
 		{
-			throw new NotImplementedException();
+			throw new NotSupportedException();
 		}
 
 		public ISnapshotWriter GetSnapshotWriter()
 		{
-			throw new NotImplementedException();
+			throw new NotSupportedException();
 		}
 
 		public void ApplySnapshot(long term, long index, Stream stream)
 		{
-			throw new NotImplementedException();
+			throw new NotSupportedException();
 		}
 	}
 }
