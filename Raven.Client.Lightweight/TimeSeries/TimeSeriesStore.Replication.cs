@@ -50,8 +50,8 @@ namespace Raven.Client.TimeSeries
 		public async Task<int> WaitForReplicationAsync(CancellationToken token = new CancellationToken())
 		{
 			AssertInitialized();
-			throw new NotImplementedException();
 			await Task.Delay(50000, token).ConfigureAwait(false);
+			throw new NotImplementedException();
 			return 0;
 		}
 	}

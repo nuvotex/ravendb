@@ -19,6 +19,7 @@ using Raven.Abstractions.Extensions;
 using Raven.Client.FileSystem.Extensions;
 using Raven.Database.Actions;
 using Raven.Database.Extensions;
+using Raven.Database.Raft.Util;
 using Raven.Database.Server.Security;
 using Raven.Database.Server.WebApi.Attributes;
 using Raven.Database.Util.Streams;
@@ -33,15 +34,22 @@ namespace Raven.Database.TimeSeries.Controllers
 	{
 		[RavenRoute("ts/{timeSeriesName}/types/{type}")]
 		[HttpPut]
-		public HttpResponseMessage PutType(TimeSeriesType type)
+		public async Task<HttpResponseMessage> PutType(TimeSeriesType type)
 		{
 			if (string.IsNullOrEmpty(type.Type) || type.Fields == null || type.Fields.Length < 1)
 				return GetEmptyMessage(HttpStatusCode.BadRequest);
 
-			using (var writer = TimeSeries.CreateWriter())
+			if (ClusterManager.IsActive() && TimeSeries.IsClusterTimeSeries())
 			{
-				writer.CreateType(type.Type, type.Fields);
-				writer.Commit();
+				await ClusterManager.Client.SendTimeSeriesPutType(type.Type, type.Fields).ConfigureAwait(false);
+			}
+			else
+			{
+				using (var writer = TimeSeries.CreateWriter())
+				{
+					writer.CreateType(type.Type, type.Fields);
+					writer.Commit();
+				}
 			}
 
 			TimeSeries.MetricsTimeSeries.ClientRequests.Mark();

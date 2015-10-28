@@ -62,6 +62,14 @@ namespace Raven.Database.Plugins.Builtins
 				pathsToCheck.Add(new PathToCheck { Path = filesystem.Configuration.Storage.Esent.JournalsStoragePath, PathType = PathType.Journal, ResourceName = filesystem.Name, ResourceType = ResourceType.FileSystem });
 				pathsToCheck.Add(new PathToCheck { Path = filesystem.Configuration.Storage.Voron.JournalsStoragePath, PathType = PathType.Journal, ResourceName = filesystem.Name, ResourceType = ResourceType.FileSystem });
 			});
+			options.CountersLandlord.ForAllCounters(cs =>
+			{
+				pathsToCheck.Add(new PathToCheck { Path = cs.Configuration.Counter.DataDirectory, PathType = PathType.Data, ResourceName = cs.Name, ResourceType = ResourceType.FileSystem });
+			});
+			options.TimeSeriesLandlord.ForAllTimeSeries(ts =>
+			{
+				pathsToCheck.Add(new PathToCheck { Path = ts.Configuration.TimeSeries.DataDirectory, PathType = PathType.Data, ResourceName = ts.Name, ResourceType = ResourceType.FileSystem });
+			});
 
 			var roots = new List<PathToCheck>();
 			var unc = new List<PathToCheck>();

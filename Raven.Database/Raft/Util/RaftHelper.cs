@@ -11,6 +11,7 @@ using Rachis.Commands;
 using Rachis.Transport;
 using Raven.Abstractions.Data;
 using Raven.Abstractions.Extensions;
+using Raven.Database.TimeSeries;
 using Raven.Database.Util;
 
 namespace Raven.Database.Raft.Util
@@ -54,6 +55,22 @@ namespace Raven.Database.Raft.Util
 				return false;
 
 			var value = database.Configuration.Settings.Get(Constants.Cluster.NonClusterDatabaseMarker);
+			if (string.IsNullOrEmpty(value)) 
+				return true;
+
+			bool result;
+			if (bool.TryParse(value, out result) == false)
+				return true;
+
+			if (result)
+				return false;
+
+			return true;
+		}
+
+		public static bool IsClusterTimeSeries(this TimeSeriesStorage timeSeries)
+		{
+			var value = timeSeries.Configuration.Settings.Get(Constants.Cluster.NonClusterDatabaseMarker);
 			if (string.IsNullOrEmpty(value)) 
 				return true;
 

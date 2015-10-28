@@ -27,7 +27,9 @@ using Raven.Abstractions.Exceptions;
 using Raven.Abstractions.Extensions;
 using Raven.Abstractions.OAuth;
 using Raven.Abstractions.Util;
+using Raven.Client.TimeSeries;
 using Raven.Database.Raft.Commands;
+using Raven.Database.Raft.Commands.TimeSeries;
 using Raven.Database.Raft.Dto;
 using Raven.Database.Raft.Util;
 using Raven.Imports.Newtonsoft.Json;
@@ -44,6 +46,8 @@ namespace Raven.Database.Raft
 		private readonly ConcurrentDictionary<string, ConcurrentQueue<HttpClient>> _httpClientsCache = new ConcurrentDictionary<string, ConcurrentQueue<HttpClient>>();
 
 		private readonly ConcurrentDictionary<string, SecuredAuthenticator> _securedAuthenticatorCache = new ConcurrentDictionary<string, SecuredAuthenticator>();
+
+		private readonly ConcurrentDictionary<string, TimeSeriesStore> _timeSeriesStores = new ConcurrentDictionary<string, TimeSeriesStore>();
 
 		public ClusterManagementHttpClient(RaftEngine raftEngine)
 		{
@@ -499,6 +503,28 @@ namespace Raven.Database.Raft
 			public void Dispose()
 			{
 				queue.Enqueue(client);
+			}
+		}
+
+		public async Task SendTimeSeriesPutType(string type, string[] fields)
+		{
+			try
+			{
+				var command = TimeSeriesPutTypeCommand.Create(type, fields);
+				raftEngine.AppendCommand(command);
+
+				await command.Completion.Task.ConfigureAwait(false);
+			}
+			catch (NotLeadingException)
+			{
+				var leaderNode = raftEngine.GetLeaderNode(WaitForLeaderTimeoutInSeconds);
+
+				var store = _timeSeriesStores.GetOrAdd(leaderNode.Uri.AbsoluteUri, x => new TimeSeriesStore
+				{
+					Url = leaderNode.Uri.AbsoluteUri,
+				}.Initialize());
+
+				await store.CreateTypeAsync(type, fields).ConfigureAwait(false);
 			}
 		}
 	}

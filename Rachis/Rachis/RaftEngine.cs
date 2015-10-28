@@ -66,11 +66,9 @@ namespace Rachis
 			}
 		}
 
-	
 		public long CommitIndex
 		{
 			get { return StateMachine.LastAppliedIndex; }
-			
 		}
 
 		public RaftEngineState State

@@ -21,10 +21,7 @@ namespace Raven.Database.Raft.Storage.Handlers
 
 		public Type HandledCommandType
 		{
-			get
-			{
-				return typeof(TCommand);
-			}
+			get { return typeof (TCommand); }
 		}
 
 		public abstract void Handle(TCommand command);

@@ -115,10 +115,7 @@ namespace Raven.Database.Raft.Storage
 
 		public bool SupportSnapshots
 		{
-			get
-			{
-				return database.Configuration.RunInMemory == false;
-			}
+			get { return database.Configuration.RunInMemory == false; }
 		}
 
 		public void CreateSnapshot(long index, long term, ManualResetEventSlim allowFurtherModifications)

@@ -21,6 +21,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Rachis;
 using Raven.Database.Server.Security;
 
 namespace Raven.Database.Server.Tenancy
