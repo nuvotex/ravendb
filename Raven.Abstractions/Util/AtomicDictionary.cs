@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Threading;
 using Raven.Abstractions.Extensions;
 
@@ -9,6 +10,9 @@ namespace Raven.Abstractions.Util
 {
     public class AtomicDictionary<TVal> : IEnumerable<KeyValuePair<string, TVal>>
     {
+        private ReadOnlyDictionary<string, TVal> snapshot;
+        private int snapshotVersion;
+        private int version;
         private readonly ConcurrentDictionary<string, object> locks;
         private readonly ConcurrentDictionary<string, TVal> items;
         private readonly EasyReaderWriterLock globalLocker = new EasyReaderWriterLock();
@@ -45,8 +49,24 @@ namespace Raven.Abstractions.Util
                     return val;
                 lock (locks.GetOrAdd(key, new object()))
                 {
-                    return items.GetOrAdd(key, actualGenerator);
+                    var result = items.GetOrAdd(key, actualGenerator);
+                    Interlocked.Increment(ref version);
+                    return result;
                 }
+            }
+        }
+
+        public ReadOnlyDictionary<string, TVal> Snapshot
+        {
+            get
+            {
+                var currentVersion = version;
+                if (currentVersion != snapshotVersion || snapshot == null)
+                {
+                    snapshot = new ReadOnlyDictionary<string, TVal>(items);
+                    snapshotVersion = currentVersion;
+                }
+                return snapshot;
             }
         }
 
@@ -70,6 +90,7 @@ namespace Raven.Abstractions.Util
                 {
                     var addValue = valueGenerator(key);
                     items.AddOrUpdate(key, addValue, (s, val) => addValue);
+                    Interlocked.Increment(ref version);
                 }
             }
         }
@@ -84,6 +105,7 @@ namespace Raven.Abstractions.Util
                 {
                     TVal val;
                     items.TryRemove(key, out val); // just to be on the safe side
+                    Interlocked.Increment(ref version);
                     return;
                 }
                 lock (value)
@@ -92,6 +114,7 @@ namespace Raven.Abstractions.Util
                     locks.TryRemove(key, out o);
                     TVal val;
                     items.TryRemove(key, out val);
+                    Interlocked.Increment(ref version);
                 }
             }
         }
@@ -110,6 +133,8 @@ namespace Raven.Abstractions.Util
         {
             items.Clear();
             locks.Clear();
+
+            Interlocked.Increment(ref version);
         }
 
         public bool TryGetValue(string key, out TVal val)
@@ -124,6 +149,8 @@ namespace Raven.Abstractions.Util
                 var result = items.TryRemove(key, out val);
                 object value;
                 locks.TryRemove(key, out value);
+
+                Interlocked.Increment(ref version);
                 return result;
             }
         }

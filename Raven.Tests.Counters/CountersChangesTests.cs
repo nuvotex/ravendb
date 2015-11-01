@@ -75,7 +75,7 @@ namespace Raven.Tests.Counters
                 var notificationTask2 = changes.Task.Result
                  .ForCountersStartingWith(GroupName, CounterName)
                  .Timeout(TimeSpan.FromSeconds(300))
-                 .Skip(1).Take(1).ToTask();
+                 .Take(1).ToTask();
 
 
                 changes.WaitForAllPendingSubscriptions();
