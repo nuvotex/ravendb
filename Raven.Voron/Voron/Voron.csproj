@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
@@ -61,7 +61,12 @@
     <Reference Include="System.IO.Compression.FileSystem" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Data\RawData\ActiveRawDataSmallSection.cs" />
+    <Compile Include="Data\RawData\DataMovedDelegate.cs" />
     <Compile Include="Data\RawData\RawDataSection.cs" />
+    <Compile Include="Data\Tables\TableSchemaStats.cs" />
+    <Compile Include="Data\Tables\Table.cs" />
+    <Compile Include="Data\Tables\TableSchema.cs" />
     <Compile Include="Debugging\StorageReport.cs" />
     <Compile Include="Debugging\StorageReportGenerator.cs" />
     <Compile Include="Exceptions\InvalidJournalFlushRequestException.cs" />
