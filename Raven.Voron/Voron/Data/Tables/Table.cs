@@ -32,8 +32,8 @@ namespace Voron.Data.Tables
         public static readonly TableHandle<T, TData> Null;
 
         public T Key;
-        private int Size;
-        private byte* DataPointer;        
+        private readonly int Size;
+        private readonly byte* DataPointer;        
 
         public TableHandle( T indexKeys, byte* ptr, int size)
         {
@@ -42,30 +42,40 @@ namespace Voron.Data.Tables
             this.Size = size;
         }
 
-        public TData Value
+        public TData GetValue()
         {
-            get
-            {
-                var readerOfT = SharedPool<TData>.Reader.Allocate();
+            var readerOfT = SharedPool<TData>.Reader.Allocate();
 
-                try
-                {                    
-                    var input = new InputPointer(DataPointer, Size);
-                    var reader = new CompactBinaryReader<InputPointer>(input);
-                    return readerOfT.Deserialize<TData>(reader);
-                }
-                finally
-                {
-                    SharedPool<TData>.Reader.Free(readerOfT);
-                }                
+            try
+            {                    
+                var input = new InputPointer(DataPointer, Size);
+                var reader = new CompactBinaryReader<InputPointer>(input);
+                return readerOfT.Deserialize<TData>(reader);
             }
+            finally
+            {
+                SharedPool<TData>.Reader.Free(readerOfT);
+            }                
         }
-        
+
+        public override bool Equals(object obj)
+        {
+            if (obj is TableHandle<T, TData>)
+            {
+                var o = (TableHandle<T, TData>)obj;
+                return o == this;
+            }
+
+            return false;
+        }
+
+        public override int GetHashCode()
+        {
+            return (int)(this.Size * 17 + this.DataPointer);
+        }
+
         public static bool operator ==(TableHandle<T, TData> c1, TableHandle<T, TData> c2)
         {
-            if (c1 == null || c2 == null)
-                return false;
-
             return c1.DataPointer == c2.DataPointer && c1.Size == c2.Size;
         }
 
@@ -432,11 +442,7 @@ namespace Voron.Data.Tables
 
                 byte* pos;
                 if (ActiveDataSmallSection.TryWriteDirect(id, size, out pos) == false)
-                {
-                    throw new InvalidOperationException(
-                        $"After successfully allocating {size:#,#;;0} bytes," +
-                        $" failed to write them on {_schema.Name}");
-                }
+                    throw new InvalidOperationException($"After successfully allocating {size:#,#;;0} bytes, failed to write them on {_schema.Name}");
 
                 // MemoryCopy into final position.
                 unsafe
