@@ -29,11 +29,17 @@ namespace Raven.Client
 		/// </remarks>
 		IAsyncAdvancedSessionOperations Advanced { get; }
 
-		/// <summary>
-		/// Begin a load while including the specified path 
-		/// </summary>
-		/// <param name="path">The path.</param>
-		IAsyncLoaderWithInclude<object> Include(string path);
+	    /// <summary>
+	    /// get's pending changes
+	    /// </summary>
+	    /// <returns></returns>
+	    void GetChanges(out IEnumerable<object> inserts, out IEnumerable<object> updates, out IEnumerable<object> deletes);
+
+        /// <summary>
+        /// Begin a load while including the specified path 
+        /// </summary>
+        /// <param name="path">The path.</param>
+        IAsyncLoaderWithInclude<object> Include(string path);
 
 		/// <summary>
 		/// Begin a load while including the specified path 

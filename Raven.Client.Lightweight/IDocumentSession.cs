@@ -28,12 +28,18 @@ namespace Raven.Client
 		/// </remarks>
 		ISyncAdvancedSessionOperation Advanced { get; }
 
-		/// <summary>
-		/// Marks the specified entity for deletion. The entity will be deleted when <see cref="IDocumentSession.SaveChanges"/> is called.
-		/// </summary>
-		/// <typeparam name="T"></typeparam>
-		/// <param name="entity">The entity.</param>
-		void Delete<T>(T entity);
+        /// <summary>
+        /// get's pending changes
+        /// </summary>
+        /// <returns></returns>
+        void GetChanges(out IEnumerable<object> inserts, out IEnumerable<object> updates, out IEnumerable<object> deletes);
+
+        /// <summary>
+        /// Marks the specified entity for deletion. The entity will be deleted when <see cref="IDocumentSession.SaveChanges"/> is called.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="entity">The entity.</param>
+        void Delete<T>(T entity);
 
 		/// <summary>
 		/// Loads the specified entity with the specified id.

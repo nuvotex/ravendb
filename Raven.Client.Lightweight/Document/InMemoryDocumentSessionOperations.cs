@@ -274,12 +274,50 @@ namespace Raven.Client.Document
 		}
 
 
-		/// <summary>
-		/// Gets the document id.
-		/// </summary>
-		/// <param name="instance">The instance.</param>
-		/// <returns></returns>
-		public string GetDocumentId(object instance)
+        /// <summary>
+        /// get's pending changes
+        /// </summary>
+        /// <returns></returns>
+        public void GetChanges(out IEnumerable<object> inserts, out IEnumerable<object> updates, out IEnumerable<object> deletes)
+        {
+            var insert = new List<object>();
+            var update = new List<object>();
+            var delete = new List<object>();
+
+            // inserts and updates
+            foreach (var entity in entitiesAndMetadata.Where(pair => EntityChanged(pair.Key, pair.Value)).ToArray()) {
+                if (entity.Value != null && entity.Value.ETag != null)
+                    update.Add(entity.Key);
+                else
+                    insert.Add(entity.Key);
+            }
+
+            // deletions
+            DocumentMetadata value = null;
+            var keysToDelete = (from deletedEntity in deletedEntities
+                                where entitiesAndMetadata.TryGetValue(deletedEntity, out value)
+                                // skip deleting read only entities
+                                where !value.OriginalMetadata.ContainsKey(Constants.RavenReadOnly) ||
+                                      !value.OriginalMetadata.Value<bool>(Constants.RavenReadOnly)
+                                select value.Key).ToList();
+
+            foreach (var key in keysToDelete) {
+                object existingEntity;
+                if (!entitiesByKey.TryGetValue(key, out existingEntity))
+                    throw new NotSupportedException("[42x002CE4] pending deletion on non-cached document " + key + ". This operation is forbidden");
+                delete.Add(existingEntity);
+            }
+
+            inserts = insert;
+            updates = update;
+            deletes = delete;
+        }
+        /// <summary>
+        /// Gets the document id.
+        /// </summary>
+        /// <param name="instance">The instance.</param>
+        /// <returns></returns>
+        public string GetDocumentId(object instance)
 		{
 			if (instance == null)
 				return null;

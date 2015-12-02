@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd">
+    <metadata>
+        <id>Nuvotex.Raven.Abstractions</id>
+        <version>2.5.0.1</version>
+        <title>Nuvotex.Raven.Abstractions</title>
+        <authors>daniel.nachtrub</authors>
+        <owners>daniel.nachtrub</owners>
+        <requireLicenseAcceptance>false</requireLicenseAcceptance>
+        <description>custom version of RavenDB client</description>
+        <copyright>Copyright © 2015</copyright>
+        <dependencies>
+        </dependencies>
+    </metadata>
+    <files>
+      <file src="build\Raven.Abstractions.dll" target="lib\net45\" />
+      <file src="build\Raven.Abstractions.pdb" target="lib\net45\" />
+    </files>
+</package>
